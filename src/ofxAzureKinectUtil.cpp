@@ -1,13 +1,114 @@
 #include "ofxAzureKinectUtil.h"
 
+
 namespace ofxAzureKinectUtil {
 
 	const int32_t TIMEOUT_IN_MS = 1000;
 
+	bool Device::open(const Settings& s) {
+
+		if (isOpen) {
+			ofLogWarning(__FUNCTION__) << "Device " << index << " already open!";
+			return false;
+		}
+
+		index = s.deviceIndex;
+
+		config = {
+			s.colorFormat,
+			s.colorResolution,
+			s.depthMode,
+			s.cameraFps,
+			s.synchronized
+		};
+
+		isUseColor = s.updateColor;
+		isUseIR = s.updateIr;
+		isUseBodies = s.updateBodies;
+		isUseDepth = s.updateBodies;
+		isUsePointCloud = s.updateVbo;
+
+		trackerConfig.sensor_orientation = s.sensorOrientation;
+
+		try {
+			// Open connection to the device.
+			this->device = k4a::device::open(static_cast<uint32_t>(s.deviceIndex));
+
+			// Get the device serial number.
+			serialNumber = device.get_serialnum();
+			
+		} catch (const k4a::error & e) {
+			ofLogError(__FUNCTION__) << e.what();
+			device.close();
+
+			return false;
+		}
+
+		isOpen = true;
+		ofLogNotice(__FUNCTION__) << "Successfully opened device " << s.deviceIndex << " with serial number " << this->serialNumber << ".";
+
+		return isOpen;
+	}
+
+	bool Device::close() {
+		if (!isOpen) return false;
+		if (isStreaming) stop();
+
+		device.close();
+
+		index = -1;
+		isOpen = false;
+		serialNumber = "";
+
+		return true;
+	}
+
+	bool Device::start() {
+		if (!isOpen) {
+			ofLogError(__FUNCTION__) << "Open device before starting cameras!";
+			return false;
+		}
+
+		// Get calibration.
+		try {
+			calibration = device.get_calibration(config.depth_mode, config.color_resolution);
+		} catch (const k4a::error & e) {
+			ofLogError(__FUNCTION__) << e.what();
+			return false;
+		}
+
+		Interface::start();
+
+		// Start cameras.
+		try {
+			this->device.start_cameras(&config);
+		} catch (const k4a::error & e) {
+			ofLogError(__FUNCTION__) << e.what();
+			return false;
+		}
+
+		isStreaming = true;
+
+		startThread();
+
+		return true;
+	}
+
+	bool Device::stop() {
+
+		waitForThread(true); // wait and stop
+		isStreaming = false;
+
+		Interface::stop();
+
+		device.stop_cameras();
+		return true;
+	}
+
 	void Device::updateCapture() {
 		try {
 			if (!device.get_capture(&capture, std::chrono::milliseconds(TIMEOUT_IN_MS))) {
-				ofLogWarning(__FUNCTION__) << "Timed out waiting for a capture for device " << this->index << ".";
+				ofLogWarning(__FUNCTION__) << "Timed out waiting for a capture for device " << index << ".";
 				return;
 			}
 		} catch (const k4a::error & e) {
@@ -16,13 +117,13 @@ namespace ofxAzureKinectUtil {
 		}
 	}
 
-	void Playback::updateCapture() {
+	/*void Playback::updateCapture() {
 		try {
 			playback.get_next_capture(&capture);
 		} catch (const k4a::error & e) {
 			ofLogError(__FUNCTION__) << e.what();
 			return;
 		}
-	}
+	}*/
 
 }
