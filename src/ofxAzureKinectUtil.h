@@ -18,16 +18,19 @@ namespace ofxAzureKinectUtil {
 			Fps cameraFps;
 			SensorOrientation sensorOrientation;
 
+			bool updateDepth;
 			bool updateColor;
 			bool updateIr;
 			bool updateBodies;
-			bool updateWorld;
-			bool updateVbo;
+			bool updatePointCloud;
 
 			bool synchronized;
 
 			Settings(int idx = 0);
 		};
+
+		Device();
+		~Device();
 
 		bool open(const Settings& s);
 		bool close();
@@ -35,17 +38,18 @@ namespace ofxAzureKinectUtil {
 		bool start() override;
 		bool stop() override;
 
+		static int getInstalledCount() { return k4a_device_get_installed_count(); }
+
 	protected:
 		void updateCapture() override;
 
 	private:
 		int index;
+		bool isStreaming;
 		std::string serialNumber;
 		k4a::device device;
 		
 		k4a_device_configuration_t config;
-		
-		bool isStreaming;
 	};
 
 	using DeviceSettings = Device::Settings;

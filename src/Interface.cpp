@@ -1,6 +1,13 @@
 #include "Interface.h"
 
 namespace ofxAzureKinectUtil {
+	
+	Interface::Interface() :
+		isOpen(false),
+		isUseDepth(false), isUseColor(false), isUseIR(false), isUseBodies(false), isUsePointCloud(false)
+	{}
+
+	Interface::~Interface() {}
 
 	bool Interface::start() {
 		if (isUseColor) {
@@ -31,6 +38,10 @@ namespace ofxAzureKinectUtil {
 			bodyTracker = nullptr;
 		}
 		
+		request.close();
+		response.close();
+		waitForThread(true); // wait and stop
+
 		return true;
 	}
 
@@ -45,9 +56,54 @@ namespace ofxAzureKinectUtil {
 
 		if (isFrameNew) {
 			// update
+			if (isUseDepth) {
+				if (!depthRemappedTex.isAllocated()) {
+					depthRemappedTex.allocate(fd.depthRemappedPix.getWidth(), fd.depthRemappedPix.getHeight(), GL_R16);
+					depthRemappedTex.setTextureMinMagFilter(GL_NEAREST, GL_NEAREST);
+				}
+				depthRemappedTex.loadData(fd.depthRemappedPix);
+			}
 
+			if (isUseColor) {
+				if (!colorTex.isAllocated()) {
+					colorTex.allocate(
+						fd.colorPix.getWidth(), fd.colorPix.getHeight(),
+						GL_RGBA8, ofGetUsingArbTex(), GL_BGRA, GL_UNSIGNED_BYTE
+					);
+					colorTex.setTextureMinMagFilter(GL_NEAREST, GL_NEAREST);
+					colorTex.bind();
+					{
+						glTexParameteri(this->colorTex.texData.textureTarget, GL_TEXTURE_SWIZZLE_R, GL_BLUE);
+						glTexParameteri(this->colorTex.texData.textureTarget, GL_TEXTURE_SWIZZLE_B, GL_RED);
+					}
+					colorTex.unbind();
+				}
+				colorTex.loadData(fd.colorPix);
+			}
+
+			if (isUseIR) {
+				if (!irTex.isAllocated()) {
+					irTex.allocate(fd.irPix.getWidth(), fd.irPix.getHeight(), GL_R16);
+					irTex.setTextureMinMagFilter(GL_NEAREST, GL_NEAREST);
+					irTex.setRGToRGBASwizzles(true);
+				}
+				irTex.loadData(fd.irPix);
+			}
 			
+			if (isUsePointCloud) pointCloud = fd.pointCloud;
+			if (isUseBodies) {
 
+				if (!bodyIndexTex.isAllocated()) {
+					bodyIndexTex.allocate(
+						fd.bodyIndexPix.getWidth(), fd.bodyIndexPix.getHeight(), GL_R
+					);
+					this->bodyIndexTex.setTextureMinMagFilter(GL_NEAREST, GL_NEAREST);
+					this->bodyIndexTex.setRGToRGBASwizzles(true);
+				}
+				bodyIndexTex.loadData(fd.bodyIndexPix);
+				bodySkeletons = std::move(fd.bodySkeletons);
+				bodyIDs = std::move(fd.bodyIDs);
+			}
 
 		}
 
@@ -105,6 +161,35 @@ namespace ofxAzureKinectUtil {
 		return true;
 	}
 
+	ofShortPixels Interface::createDepthRemapped(const k4a::image& depth, const k4a::image& color) {
+		const glm::ivec2 res(color.get_width_pixels(), color.get_height_pixels());
+		
+		k4a::image transformedDepthImg;
+		
+		try {
+			transformedDepthImg = k4a::image::create(K4A_IMAGE_FORMAT_DEPTH16,
+				res.x, res.y,
+				res.x * static_cast<int>(sizeof(uint16_t)));
+
+			this->transformation.depth_image_to_color_camera(depth, &transformedDepthImg);
+		} catch (const k4a::error & e) {
+			ofLogError(__FUNCTION__) << e.what();
+			return ofShortPixels();
+		}
+
+		const auto transformedColorData = reinterpret_cast<uint16_t*>(transformedDepthImg.get_buffer());
+
+		ofShortPixels depthRemapped;
+
+		depthRemapped.allocate(res.x, res.y, 1);	
+		depthRemapped.setFromPixels(transformedColorData, res.x, res.y, 1);
+		
+		transformedDepthImg.reset();
+
+		return depthRemapped;
+
+	}
+
 	void Interface::threadedFunction() {
 		bool r = true;
 		while (request.receive(r)) {
@@ -112,33 +197,37 @@ namespace ofxAzureKinectUtil {
 			
 			updateCapture();
 
-			
-			if (isUseDepth) {
-				k4a::image& img = this->capture.get_depth_image();
-				if (img) {
-					const glm::ivec2 res(img.get_width_pixels(), img.get_height_pixels());
-					newFd.depthPix.allocate(res.x, res.y, 1);
-					newFd.depthPix.setFromPixels(reinterpret_cast<uint16_t*>(img.get_buffer()), res.x, res.y, 1);
-				}
-				img.reset();
-			}
+			k4a::image& depth = this->capture.get_depth_image();
+			k4a::image& color = this->capture.get_color_image();
 
 			if (isUseColor) {
-				k4a::image& img = this->capture.get_color_image();
-				if (img) {
-					const glm::ivec2 res(img.get_width_pixels(), img.get_height_pixels());
+				if (color) {
+					const glm::ivec2 res(color.get_width_pixels(), color.get_height_pixels());
+					ofLogNotice() << res;
 					newFd.colorPix.allocate(res.x, res.y, OF_PIXELS_BGRA);
-					newFd.colorPix.setFromPixels(reinterpret_cast<uint8_t*>(img.get_buffer()), res.x, res.y, 4);
+					const auto colorData = reinterpret_cast<uint8_t*>(color.get_buffer());
+					newFd.colorPix.setFromPixels(colorData, res.x, res.y, 4);
+				} else {
+					ofLogWarning(__FUNCTION__) << "No Color capture found!";
 				}
-				img.reset();
+				
+			}
+			
+			if (isUseDepth) {
+				//newFd.depthRemappedPix = createDepthRemapped(depth, color);
 			}
 
+			depth.reset();
+			color.reset();
+			
 			if (isUseIR) {
 				k4a::image& img = this->capture.get_ir_image();
 				if (img) {
 					const glm::ivec2 res(img.get_width_pixels(), img.get_height_pixels());
 					newFd.irPix.allocate(res.x, res.y, 1);
 					newFd.irPix.setFromPixels(reinterpret_cast<uint16_t*>(img.get_buffer()), res.x, res.y, 1);
+				} else {
+					ofLogWarning(__FUNCTION__) << "No Ir16 capture found!";
 				}
 				img.reset();
 			}
@@ -180,6 +269,7 @@ namespace ofxAzureKinectUtil {
 				}
 			}
 
+			response.send(std::move(newFd));
 
 		}
 

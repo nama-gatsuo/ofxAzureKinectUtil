@@ -5,6 +5,26 @@ namespace ofxAzureKinectUtil {
 
 	const int32_t TIMEOUT_IN_MS = 1000;
 
+	Device::Settings::Settings(int idx)
+		: deviceIndex(idx)
+		, depthMode(K4A_DEPTH_MODE_WFOV_2X2BINNED)
+		, colorResolution(K4A_COLOR_RESOLUTION_1080P)
+		, colorFormat(K4A_IMAGE_FORMAT_COLOR_BGRA32)
+		, cameraFps(K4A_FRAMES_PER_SECOND_30)
+		, sensorOrientation(K4ABT_SENSOR_ORIENTATION_DEFAULT)
+		, updateDepth(true)
+		, updateColor(true)
+		, updateIr(false)
+		, updateBodies(false)
+		, updatePointCloud(true)
+		, synchronized(true)
+	{}
+
+
+
+	Device::Device() : index(-1), isStreaming(false) {}
+	Device::~Device() {}
+
 	bool Device::open(const Settings& s) {
 
 		if (isOpen) {
@@ -22,22 +42,22 @@ namespace ofxAzureKinectUtil {
 			s.synchronized
 		};
 
+		isUseDepth = s.updateDepth;
 		isUseColor = s.updateColor;
 		isUseIR = s.updateIr;
 		isUseBodies = s.updateBodies;
-		isUseDepth = s.updateBodies;
-		isUsePointCloud = s.updateVbo;
+		isUsePointCloud = s.updatePointCloud;
 
 		trackerConfig.sensor_orientation = s.sensorOrientation;
 
 		try {
 			// Open connection to the device.
-			this->device = k4a::device::open(static_cast<uint32_t>(s.deviceIndex));
+			device = k4a::device::open(static_cast<uint32_t>(s.deviceIndex));
 
 			// Get the device serial number.
 			serialNumber = device.get_serialnum();
 			
-		} catch (const k4a::error & e) {
+		} catch (const k4a::error& e) {
 			ofLogError(__FUNCTION__) << e.what();
 			device.close();
 
@@ -95,8 +115,7 @@ namespace ofxAzureKinectUtil {
 	}
 
 	bool Device::stop() {
-
-		waitForThread(true); // wait and stop
+		
 		isStreaming = false;
 
 		Interface::stop();
