@@ -32,6 +32,8 @@ namespace ofxAzureKinectUtil {
 		const std::vector<k4abt_skeleton_t>& getBodySkeletons() const { return bodySkeletons; }
 		const std::vector<uint32_t>& getBodyIDs() const { return bodyIDs; }
 
+		const ofTexture& getRayTex() const { return rayTex; }
+
 	protected:
 		// Accessed in a main thread
 		bool isOpen;
@@ -61,7 +63,6 @@ namespace ofxAzureKinectUtil {
 		std::vector<uint32_t> bodyIDs;
 
 		bool createRayTex();
-		ofShortPixels createDepthRemapped(const k4a::image& depth, const k4a::image& color);
 
 	protected:
 		// Accessed in a second thread
@@ -80,6 +81,11 @@ namespace ofxAzureKinectUtil {
 		virtual void updateCapture() = 0;
 	private:
 		void threadedFunction() override;
+		ofShortPixels createDepthRemapped(const k4a::image& depth, const k4a::image& color);
+		ofMesh createPointCloud(k4a::image& frameImg, k4a::image& tableImg);
+		ofMesh createPointCloud(k4a::image& depth);
+
+		k4a::image depthRemappedImg;
 
 		ofThreadChannel<bool> request;
 		ofThreadChannel<FrameData> response;

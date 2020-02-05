@@ -10,6 +10,6 @@ public:
 	void keyPressed(int key);
 	void exit();
 private:
-	ofPtr<ofxAzureKinectUtil::Device> kinect;
-	
+	ofxAzureKinectUtil::Device kinect;
+	ofEasyCam cam;
 };
