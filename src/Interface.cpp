@@ -212,10 +212,10 @@ namespace ofxAzureKinectUtil {
 				
 				int idx = y * res.x + x;
 
-				if (frameData[idx] != 0 &&
-					!isnan(tableData[idx].xy.x) &&
-					!isnan(tableData[idx].xy.y)
-				) {
+				bool isValid = frameData[idx] != 0 && !isnan(tableData[idx].xy.x) && !isnan(tableData[idx].xy.y);
+				isValid = isValid && !(tableData[idx].xy.x == 0 && tableData[idx].xy.y == 0);
+
+				if (isValid) {
 					float depthVal = static_cast<float>(frameData[idx]);
 
 					pc.addVertex(- glm::vec3(
@@ -228,8 +228,6 @@ namespace ofxAzureKinectUtil {
 				}
 			}
 		}
-
-		ofLogNotice() << pc.getNumVertices();
 
 		return pc;
 	}
@@ -299,8 +297,6 @@ namespace ofxAzureKinectUtil {
 				}
 				img.reset();
 			}
-
-			
 
 			if (this->isUseBodies) {
 				k4a_wait_result_t enqueueResult = k4abt_tracker_enqueue_capture(bodyTracker, capture.handle(), K4A_WAIT_INFINITE);

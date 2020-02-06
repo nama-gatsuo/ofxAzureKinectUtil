@@ -7,7 +7,7 @@ void ofApp::setup() {
 
 	ofxAzureKinectUtil::DeviceSettings s;
 	s.updateColor = true;
-	s.updateDepth = false;
+	s.updateDepth = true;
 	s.updateIr = false;
 	s.updatePointCloud = true;
 
@@ -23,7 +23,8 @@ void ofApp::update() {
 
 void ofApp::draw() {
 
-	
+	if (!kinect.getColorTex().bAllocated()) return;
+
 	cam.begin();
 
 	ofEnableDepthTest();
@@ -33,7 +34,9 @@ void ofApp::draw() {
 	ofDisableDepthTest();
 	
 	cam.end();
-	//kinect.getRayTex().draw(0, 0);
+	
+	//kinect.getDepthTex().draw(0, 0);
+	
 	ofDrawBitmapStringHighlight("fps: " + ofToString(ofGetFrameRate()), 12, 16);
 }
 
