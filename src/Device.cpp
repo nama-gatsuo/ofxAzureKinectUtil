@@ -17,8 +17,8 @@ namespace ofxAzureKinectUtil {
 		, updateIr(false)
 		, updateBodies(false)
 		, updatePointCloud(true)
-		, synchronized(true)
-	{}
+		, synchronized(true) {
+	}
 
 
 
@@ -56,8 +56,8 @@ namespace ofxAzureKinectUtil {
 
 			// Get the device serial number.
 			serialNumber = device.get_serialnum();
-			
-		} catch (const k4a::error& e) {
+
+		} catch (const k4a::error & e) {
 			ofLogError(__FUNCTION__) << e.what();
 			device.close();
 
@@ -101,7 +101,7 @@ namespace ofxAzureKinectUtil {
 
 		// Start cameras.
 		try {
-			this->device.start_cameras(&config);
+			device.start_cameras(&config);
 		} catch (const k4a::error & e) {
 			ofLogError(__FUNCTION__) << e.what();
 			return false;
@@ -115,7 +115,7 @@ namespace ofxAzureKinectUtil {
 	}
 
 	bool Device::stop() {
-		
+
 		isStreaming = false;
 
 		Interface::stop();
@@ -136,13 +136,6 @@ namespace ofxAzureKinectUtil {
 		}
 	}
 
-	/*void Playback::updateCapture() {
-		try {
-			playback.get_next_capture(&capture);
-		} catch (const k4a::error & e) {
-			ofLogError(__FUNCTION__) << e.what();
-			return;
-		}
-	}*/
+	
 
 }

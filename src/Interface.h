@@ -8,6 +8,7 @@
 
 #include <k4a/k4a.hpp>
 #include <k4abt.h>
+#include <turbojpeg.h>
 
 namespace ofxAzureKinectUtil {
 	class Interface : protected ofThread {
@@ -90,7 +91,7 @@ namespace ofxAzureKinectUtil {
 		ofThreadChannel<bool> request;
 		ofThreadChannel<FrameData> response;
 
-		
+		tjhandle jpegDecompressor;
 
 	};
 }

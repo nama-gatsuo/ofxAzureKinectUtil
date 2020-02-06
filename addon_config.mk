@@ -12,22 +12,21 @@ vs:
 	ADDON_INCLUDES += $(AZUREKINECT_SDK)\sdk\include
 	ADDON_INCLUDES += $(AZUREKINECT_BODY_SDK)\sdk\include
 	ADDON_LIBS += $(AZUREKINECT_SDK)\sdk\windows-desktop\amd64\release\lib\k4a.lib
+	ADDON_LIBS += $(AZUREKINECT_SDK)\sdk\windows-desktop\amd64\release\lib\k4arecord.lib
 	ADDON_LIBS += $(AZUREKINECT_BODY_SDK)\sdk\windows-desktop\amd64\release\lib\k4abt.lib
-	
-linux64: 
-	
+
+linux64:
+
 linux:
 
 linuxarmv6l:
 
 linuxarmv7l:
-	
+
 msys2:
 
-android/armeabi:	
-	
-android/armeabi-v7a:	
+android/armeabi:
+
+android/armeabi-v7a:
 
 ios:
-
-
