@@ -248,7 +248,7 @@ namespace ofxAzureKinectUtil {
 					pc.addVertex(- glm::vec3(
 						tableData[idx].xy.x * depthVal,
 						tableData[idx].xy.y * depthVal,
-						depthVal
+						- depthVal
 					));
 
 					pc.addTexCoord(glm::vec2(x, y));
