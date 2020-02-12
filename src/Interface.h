@@ -35,6 +35,7 @@ namespace ofxAzureKinectUtil {
 		const std::vector<uint32_t>& getBodyIDs() const { return bodyIDs; }
 
 		const ofTexture& getRayTex() const { return rayTex; }
+		const IMU& getIMU() const { return imu; }
 
 	protected:
 		// Accessed in a main thread
@@ -52,6 +53,8 @@ namespace ofxAzureKinectUtil {
 			ofPixels bodyIndexPix;
 			std::vector<k4abt_skeleton_t> bodySkeletons;
 			std::vector<uint32_t> bodyIDs;
+
+			IMU imu;
 		} fd;
 	private:
 		ofTexture irTex, colorTex; // Raw textures
@@ -65,6 +68,8 @@ namespace ofxAzureKinectUtil {
 		ofTexture bodyIndexTex;
 		std::vector<k4abt_skeleton_t> bodySkeletons;
 		std::vector<uint32_t> bodyIDs;
+
+		IMU imu;
 
 		bool createRayTex();
 
@@ -82,8 +87,10 @@ namespace ofxAzureKinectUtil {
 		k4a::transformation transformation;
 		k4abt_tracker_configuration_t trackerConfig;
 		k4abt_tracker_t bodyTracker;
-		
+		k4a_imu_sample_t imuSample;
+
 		virtual void updateCapture() = 0;
+		virtual void updateIMU() = 0;
 	private:
 		void threadedFunction() override;
 		ofShortPixels createDepthRemapped(const k4a::image& depth, const k4a::image& color);

@@ -43,7 +43,7 @@ namespace ofxAzureKinectUtil {
 
 	protected:
 		void updateCapture() override;
-
+		void updateIMU() override;
 	private:
 		int index;
 		bool isStreaming;

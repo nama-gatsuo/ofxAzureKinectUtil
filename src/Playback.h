@@ -32,7 +32,7 @@ namespace ofxAzureKinectUtil {
 		bool stop() override;
 	protected:
 		void updateCapture() override;
-
+		void updateIMU() override;
 	private:
 		bool isPlaying;
 		k4a::playback playback;

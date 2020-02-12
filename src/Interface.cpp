@@ -1,5 +1,6 @@
 #include "Interface.h"
 #include <unordered_map>
+#include "Types.h"
 
 namespace ofxAzureKinectUtil {
 	
@@ -58,6 +59,11 @@ namespace ofxAzureKinectUtil {
 		}
 
 		if (isFrameNew) {
+
+			imu.temperature = fd.imu.temperature;
+			imu.acc += fd.imu.acc / (30.f * 30.f);
+			imu.gyro += fd.imu.gyro / 30.f;
+
 			// update
 			if (isUseDepth) {
 				if (!depthRemappedTex.isAllocated()) {
@@ -373,6 +379,13 @@ namespace ofxAzureKinectUtil {
 		while (request.receive(r)) {
 			FrameData newFd;
 			
+			updateIMU();
+			newFd.imu = {
+				imuSample.temperature,
+				toGlm(imuSample.acc_sample),
+				toGlm(imuSample.gyro_sample)
+			};
+
 			updateCapture();
 
 			k4a::image& depth = this->capture.get_depth_image();

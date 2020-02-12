@@ -108,5 +108,13 @@ namespace ofxAzureKinectUtil {
 		}
 	}
 
+	void Playback::updateIMU() {
+		try {
+			playback.get_next_imu_sample(&imuSample);
+		} catch (const k4a::error & e) {
+			ofLogError(__FUNCTION__) << e.what();
+			return;
+		}
+	}
 }
 

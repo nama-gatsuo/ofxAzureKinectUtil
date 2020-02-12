@@ -9,7 +9,7 @@
 * **Pointcloud** as `ofVboMesh` and texture binding
 * Raw data access as `ofTexture`s
 
-## Prerequisists
+## Setup
 * Install the [Azure Kinect Sensor SDK](https://docs.microsoft.com/en-us/azure/Kinect-dk/sensor-sdk-download).
 * Install the [Azure Kinect Body Tracking SDK](https://docs.microsoft.com/en-us/azure/Kinect-dk/body-sdk-download).
 * Add the path to the Sensor SDK `bin` folder to the `PATH` variable. The default is `%AZUREKINECT_SDK%\sdk\windows-desktop\amd64\release\bin`.

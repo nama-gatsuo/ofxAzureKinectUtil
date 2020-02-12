@@ -135,6 +135,16 @@ namespace ofxAzureKinectUtil {
 		}
 	}
 
-	
+	void Device::updateIMU() {
+		try {
+			if (!device.get_imu_sample(&imuSample, std::chrono::milliseconds(TIMEOUT_IN_MS))) {
+				ofLogWarning(__FUNCTION__) << "Timed out waiting for a IMU for device " << index << ".";
+				return;
+			}
+		} catch (const k4a::error & e) {
+			ofLogError(__FUNCTION__) << e.what();
+			return;
+		}
+	}
 
 }

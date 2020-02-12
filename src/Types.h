@@ -21,5 +21,11 @@ namespace ofxAzureKinectUtil {
 	inline const glm::quat toGlm(const k4a_quaternion_t& q) {
 		return glm::quat(q.v[0], q.v[1], q.v[2], q.v[3]);
 	}
+
+	struct IMU {
+		float temperature; // Celsius
+		glm::vec3 acc; // meter/s^2
+		glm::vec3 gyro; // radians/s
+	};
 }
 
