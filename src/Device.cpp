@@ -20,8 +20,6 @@ namespace ofxAzureKinectUtil {
 		, synchronized(true) {
 	}
 
-
-
 	Device::Device() : index(-1), isStreaming(false) {}
 	Device::~Device() {}
 
@@ -47,6 +45,7 @@ namespace ofxAzureKinectUtil {
 		isUseIR = s.updateIr;
 		isUseBodies = s.updateBodies;
 		isUsePointCloud = s.updatePointCloud;
+		isUsePolygonMesh = s.updatePolygonMesh;
 
 		trackerConfig.sensor_orientation = s.sensorOrientation;
 

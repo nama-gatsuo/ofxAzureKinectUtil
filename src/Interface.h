@@ -28,6 +28,7 @@ namespace ofxAzureKinectUtil {
 		const ofTexture& getDepthTex() const { return depthRemappedTex; }
 		const ofTexture& getColorTex() const { return colorTex; }
 		const ofVboMesh& getPointCloud() const { return pointCloud; }
+		const ofVboMesh& getPolygonMesh() const { return polygon; }
 
 		const ofTexture& getBodyIndexTex() const { return bodyIndexTex; }
 		const std::vector<k4abt_skeleton_t>& getBodySkeletons() const { return bodySkeletons; }
@@ -46,6 +47,7 @@ namespace ofxAzureKinectUtil {
 			ofShortPixels irPix;
 			ofShortPixels depthRemappedPix;
 			ofMesh pointCloud;
+			ofMesh polygon;
 
 			ofPixels bodyIndexPix;
 			std::vector<k4abt_skeleton_t> bodySkeletons;
@@ -55,6 +57,7 @@ namespace ofxAzureKinectUtil {
 		ofTexture irTex, colorTex; // Raw textures
 		ofTexture depthRemappedTex; // Depth texture in Color Camera Space
 		ofVboMesh pointCloud;
+		ofVboMesh polygon;
 
 		ofTexture rayTex; // Ray of color camera (Color Camera Space -> Wolrd Space)
 		k4a::image rayImg;
@@ -72,6 +75,7 @@ namespace ofxAzureKinectUtil {
 		bool isUseIR;
 		bool isUseBodies;
 		bool isUsePointCloud;
+		bool isUsePolygonMesh;
 
 		k4a::capture capture;
 		k4a::calibration calibration;
@@ -85,6 +89,7 @@ namespace ofxAzureKinectUtil {
 		ofShortPixels createDepthRemapped(const k4a::image& depth, const k4a::image& color);
 		ofMesh createPointCloud(k4a::image& frameImg, k4a::image& tableImg);
 		ofMesh createPointCloud(k4a::image& depth);
+		ofMesh createPolygonMesh(k4a::image& frameImg, k4a::image& tableImg);
 
 		k4a::image depthRemappedImg;
 

@@ -1,10 +1,11 @@
 #include "Interface.h"
+#include <unordered_map>
 
 namespace ofxAzureKinectUtil {
 	
 	Interface::Interface() :
 		isOpen(false),
-		isUseDepth(false), isUseColor(false), isUseIR(false), isUseBodies(false), isUsePointCloud(false),
+		isUseDepth(false), isUseColor(false), isUseIR(false), isUseBodies(false), isUsePointCloud(false), isUsePolygonMesh(false),
 		jpegDecompressor(tjInitDecompress())
 	{}
 
@@ -13,7 +14,7 @@ namespace ofxAzureKinectUtil {
 	}
 
 	bool Interface::start() {
-		if (isUsePointCloud) {
+		if (isUsePointCloud || isUsePolygonMesh) {
 			// Create transformation.
 			transformation = k4a::transformation(this->calibration);
 		}
@@ -112,6 +113,8 @@ namespace ofxAzureKinectUtil {
 			
 			if (isUsePointCloud) pointCloud = std::move(fd.pointCloud);
 
+			if (isUsePolygonMesh) polygon = std::move(fd.polygon);
+
 			if (isUseBodies) {
 
 				if (!bodyIndexTex.isAllocated()) {
@@ -171,12 +174,9 @@ namespace ofxAzureKinectUtil {
 					imgData[idx].xy.y = ray.xyz.y;
 				} else {
 					// The pixel is invalid.
-					//ofLogNotice(__FUNCTION__) << "Pixel " << depthToWorldData[idx].xy.x << ", " << depthToWorldData[idx].xy.y << " is invalid";
 					imgData[idx].xy.x = 0;
 					imgData[idx].xy.y = 0;
-				}
-
-				
+				}	
 			}
 		}
 
@@ -274,10 +274,97 @@ namespace ofxAzureKinectUtil {
 			ofLogError(__FUNCTION__) << e.what();
 			return ofMesh();
 		}
-		
-		
 
 		return ofMesh();
+	}
+
+	ofMesh Interface::createPolygonMesh(k4a::image& frameImg, k4a::image& tableImg) {
+		ofMesh mesh;
+		mesh.setMode(OF_PRIMITIVE_TRIANGLES);
+
+		const glm::ivec2 res(frameImg.get_width_pixels(), frameImg.get_height_pixels());
+		const glm::ivec2 tableRes(tableImg.get_width_pixels(), tableImg.get_height_pixels());
+		
+		if (res != tableRes) {
+			ofLogError(__FUNCTION__) << "Image resolution mismatch! " << res << " vs " << tableRes;
+			return ofMesh();
+		}
+
+		const auto frameData = reinterpret_cast<uint16_t*>(frameImg.get_buffer());
+		const auto tableData = reinterpret_cast<k4a_float2_t*>(tableImg.get_buffer());
+
+		const int pixelSize = 4;
+		// list of index of depth map(x-y) - vNum
+		std::unordered_map<int, int> vMap;
+		int indexCount = 0;
+		for (int y = 0; y < res.y - pixelSize; y += pixelSize) {
+			for (int x = 0; x < res.x - pixelSize; x += pixelSize) {
+				int index[4] = {
+						y * res.x + x,
+						y * res.x + (x + pixelSize),
+						(y + pixelSize) * res.x + x,
+						(y + pixelSize) * res.x + (x + pixelSize)
+				};
+				glm::vec3 pos[4];
+				glm::vec2 uv[4];
+				int eraseCount = 0;
+				bool eraseFlag[4]{ false, false, false, false };
+
+				for (int i = 0; i < 4; i++) {
+					int idx = index[i];
+					
+					bool isValid = frameData[idx] != 0 && !isnan(tableData[idx].xy.x) && !isnan(tableData[idx].xy.y);
+					isValid = isValid && !(tableData[idx].xy.x == 0 && tableData[idx].xy.y == 0);
+
+					float depthVal = static_cast<float>(frameData[idx]);
+					glm::vec3 p = -glm::vec3(tableData[idx].xy.x, tableData[idx].xy.y, -1.f) * depthVal;
+
+					bool isInArea = glm::length(p * 0.001f) < 1.4f && glm::length(p * 0.001f) != 0.f;
+
+					if (isValid && isInArea) {
+						pos[i] = p;
+						uv[i] = glm::vec2(x, y);
+					} else {
+						eraseFlag[i] = true;
+						eraseCount++;
+					}
+				}
+
+				// try to check if possible to make square
+				if (eraseCount >= 2) continue;
+				else if (eraseCount == 1) {
+					for (int i = 0; i < 4; i++) {
+						if (!eraseFlag[i]) {
+							// avoid double count
+							if (vMap.count(index[i]) == 0) {
+								vMap[index[i]] = indexCount++;
+								mesh.addVertex(pos[i]);
+								mesh.addTexCoord(uv[i]);
+							}
+							mesh.addIndex(vMap[index[i]]);
+						}
+					}
+				} else if (eraseCount == 0) {
+					for (int i = 0; i < 4; i++) {
+						if (vMap.count(index[i]) == 0) {
+							vMap[index[i]] = indexCount++;
+							mesh.addVertex(pos[i]);
+							mesh.addTexCoord(uv[i]);
+						}
+					}
+					mesh.addIndex(vMap[index[0]]);
+					mesh.addIndex(vMap[index[1]]);
+					mesh.addIndex(vMap[index[2]]);
+
+					mesh.addIndex(vMap[index[2]]);
+					mesh.addIndex(vMap[index[1]]);
+					mesh.addIndex(vMap[index[3]]);
+				}
+			}
+		}
+		return mesh;
+		
+
 	}
 
 	void Interface::threadedFunction() {
@@ -323,7 +410,7 @@ namespace ofxAzureKinectUtil {
 				
 			}
 			
-			if (isUseDepth || isUsePointCloud) {
+			if (isUseDepth || isUsePointCloud || isUsePolygonMesh) {
 				if (depth && color) {
 					newFd.depthRemappedPix = createDepthRemapped(depth, color);
 				}
@@ -334,6 +421,13 @@ namespace ofxAzureKinectUtil {
 					newFd.pointCloud = createPointCloud(depthRemappedImg, rayImg);
 				}
 			}
+
+			if (isUsePolygonMesh) {
+				if (depth && color) {
+					newFd.polygon = createPolygonMesh(depthRemappedImg, rayImg);
+				}
+			}
+
 
 			depth.reset();
 			color.reset();

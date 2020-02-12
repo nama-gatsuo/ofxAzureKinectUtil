@@ -23,6 +23,7 @@ namespace ofxAzureKinectUtil {
 			bool updateIr;
 			bool updateBodies;
 			bool updatePointCloud;
+			bool updatePolygonMesh;
 
 			bool synchronized;
 

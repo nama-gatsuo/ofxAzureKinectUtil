@@ -9,6 +9,7 @@ namespace ofxAzureKinectUtil {
 		, updateIr(false)
 		, updateBodies(false)
 		, updatePointCloud(true)
+		, updatePolygonMesh(false)
 	{}
 
 	Playback::Playback() : isPlaying(false) {}
@@ -21,6 +22,7 @@ namespace ofxAzureKinectUtil {
 		isUseIR = s.updateIr;
 		isUseBodies = s.updateBodies;
 		isUsePointCloud = s.updatePointCloud;
+		isUsePolygonMesh = s.updatePolygonMesh;
 
 		try {
 			std::string fileName = "data/" + s.fileName;
