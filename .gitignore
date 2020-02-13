@@ -28,7 +28,6 @@ xcuserdata/
 */icon.rc
 *.obj
 *dll
-*.lib
 *.ipdb
 *.iobj
 *.exe
