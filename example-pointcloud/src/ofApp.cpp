@@ -1,9 +1,6 @@
 #include "ofApp.h"
 
 void ofApp::setup() {
-	
-	ofSetVerticalSync(false);
-	ofSetFrameRate(60);
 
 	ofxAzureKinectUtil::DeviceSettings s;
 	s.updateColor = true;
@@ -26,6 +23,8 @@ void ofApp::draw() {
 	if (!kinect.getColorTex().bAllocated()) return;
 
 	cam.begin();
+	ofPushMatrix();
+	ofMultMatrix(glm::toMat4(kinect.getOrientation()));
 
 	ofEnableDepthTest();
 	kinect.getColorTex().bind();
@@ -33,9 +32,8 @@ void ofApp::draw() {
 	kinect.getDepthTex().unbind();
 	ofDisableDepthTest();
 	
+	ofPopMatrix();
 	cam.end();
-	
-	//kinect.getDepthTex().draw(0, 0);
 	
 	ofDrawBitmapStringHighlight("fps: " + ofToString(ofGetFrameRate()), 12, 16);
 }

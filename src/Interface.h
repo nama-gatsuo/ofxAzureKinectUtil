@@ -5,10 +5,12 @@
 #include "ofPixels.h"
 #include "ofTexture.h"
 #include "ofVboMesh.h"
+#include "k4aTypes.h"
 
 #include <k4a/k4a.hpp>
 #include <k4abt.h>
-#include <turbojpeg.h>
+#include "turbojpeg.h"
+#include "attitude_estimator.h"
 
 namespace ofxAzureKinectUtil {
 	class Interface : protected ofThread {
@@ -36,7 +38,7 @@ namespace ofxAzureKinectUtil {
 
 		const ofTexture& getRayTex() const { return rayTex; }
 		const IMU& getIMU() const { return imu; }
-
+		const glm::quat& getOrientation() const { return estimatedOrientation; }
 	protected:
 		// Accessed in a main thread
 		bool isOpen;
@@ -70,6 +72,7 @@ namespace ofxAzureKinectUtil {
 		std::vector<uint32_t> bodyIDs;
 
 		IMU imu;
+		glm::quat estimatedOrientation;
 
 		bool createRayTex();
 
@@ -104,6 +107,7 @@ namespace ofxAzureKinectUtil {
 		ofThreadChannel<FrameData> response;
 
 		tjhandle jpegDecompressor;
+		stateestimation::AttitudeEstimator ae;
 
 	};
 }

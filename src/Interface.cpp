@@ -1,13 +1,12 @@
 #include "Interface.h"
 #include <unordered_map>
-#include "Types.h"
 
 namespace ofxAzureKinectUtil {
 	
 	Interface::Interface() :
 		isOpen(false),
 		isUseDepth(false), isUseColor(false), isUseIR(false), isUseBodies(false), isUsePointCloud(false), isUsePolygonMesh(false),
-		jpegDecompressor(tjInitDecompress())
+		jpegDecompressor(tjInitDecompress()), ae(true)
 	{}
 
 	Interface::~Interface() {
@@ -60,9 +59,16 @@ namespace ofxAzureKinectUtil {
 
 		if (isFrameNew) {
 
-			imu.temperature = fd.imu.temperature;
-			imu.acc += fd.imu.acc / (30.f * 30.f);
-			imu.gyro += fd.imu.gyro / 30.f;
+			// Estimate orientation from IMU
+			{
+				double dt = double(fd.imu.timestamp - imu.timestamp) * 1e-6;
+				imu = std::move(fd.imu);
+				ae.update(dt, imu.gyro.y, imu.gyro.z, imu.gyro.x, imu.acc.y, imu.acc.z, imu.acc.x, 0, 0, 0);
+				double q[4];
+				ae.getAttitude(q);
+				const static glm::quat bias = glm::quat(glm::toQuat(glm::rotate(float(PI), glm::vec3(0, 0, 1)) * glm::rotate(float(-HALF_PI), glm::vec3(1, 0, 0))));
+				estimatedOrientation = bias * glm::quat(q[0], q[1], q[2], q[3]);
+			}
 
 			// update
 			if (isUseDepth) {
@@ -383,7 +389,8 @@ namespace ofxAzureKinectUtil {
 			newFd.imu = {
 				imuSample.temperature,
 				toGlm(imuSample.acc_sample),
-				toGlm(imuSample.gyro_sample)
+				toGlm(imuSample.gyro_sample),
+				imuSample.acc_timestamp_usec
 			};
 
 			updateCapture();

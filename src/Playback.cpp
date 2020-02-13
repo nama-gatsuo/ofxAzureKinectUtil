@@ -96,12 +96,8 @@ namespace ofxAzureKinectUtil {
 	void Playback::updateCapture() {
 
 		try {
-			// sleep thread to sync fps
-			// std::this_thread::sleep_for(timePerFrame);
-
 			bool isEnd = !playback.get_next_capture(&capture);
 			if (isEnd) playback.seek_timestamp(std::chrono::microseconds(0), K4A_PLAYBACK_SEEK_BEGIN);
-			
 		} catch (const k4a::error & e) {
 			ofLogError(__FUNCTION__) << e.what();
 			return;

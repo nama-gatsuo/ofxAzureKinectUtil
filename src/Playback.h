@@ -1,5 +1,5 @@
 #pragma once
-#include "Types.h"
+#include "k4aTypes.h"
 #include "Interface.h"
 #include <k4a/k4a.hpp>
 #include <k4arecord/playback.hpp>

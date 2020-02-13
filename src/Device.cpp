@@ -101,6 +101,7 @@ namespace ofxAzureKinectUtil {
 		// Start cameras.
 		try {
 			device.start_cameras(&config);
+			device.start_imu();
 		} catch (const k4a::error & e) {
 			ofLogError(__FUNCTION__) << e.what();
 			return false;
@@ -120,6 +121,7 @@ namespace ofxAzureKinectUtil {
 		Interface::stop();
 
 		device.stop_cameras();
+		device.stop_imu();
 		return true;
 	}
 

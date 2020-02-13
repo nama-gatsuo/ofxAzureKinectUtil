@@ -26,6 +26,7 @@ namespace ofxAzureKinectUtil {
 		float temperature; // Celsius
 		glm::vec3 acc; // meter/s^2
 		glm::vec3 gyro; // radians/s
+		uint64_t timestamp; // microsecond
 	};
 }
 

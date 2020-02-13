@@ -11,6 +11,13 @@ common:
 vs:
 	ADDON_INCLUDES += $(AZUREKINECT_SDK)\sdk\include
 	ADDON_INCLUDES += $(AZUREKINECT_BODY_SDK)\sdk\include
+
+	ADDON_INCLUDES_EXCLUDE += libs
+	ADDON_INCLUDES_EXCLUDE += libs\turbojpeg
+	ADDON_INCLUDES_EXCLUDE += libs\turbojpeg\lib
+	ADDON_INCLUDES_EXCLUDE += libs\turbojpeg\lib\%
+	ADDON_INCLUDES_EXCLUDE += libs\attitude_estimator
+
 	ADDON_LIBS += $(AZUREKINECT_SDK)\sdk\windows-desktop\amd64\release\lib\k4a.lib
 	ADDON_LIBS += $(AZUREKINECT_SDK)\sdk\windows-desktop\amd64\release\lib\k4arecord.lib
 	ADDON_LIBS += $(AZUREKINECT_BODY_SDK)\sdk\windows-desktop\amd64\release\lib\k4abt.lib
