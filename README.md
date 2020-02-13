@@ -7,6 +7,7 @@
 * **Playback** of `.mkv` file via `ofxAzureKinectUtil::Playback`
 * **Multithreading** to process sensor inputs
 * **Pointcloud** as `ofVboMesh` and texture binding
+* Polygon meshing of depth input
 * Raw data (depth/color/IR) access as `ofTexture`s
 * Device orientation estimation from IMU
 
