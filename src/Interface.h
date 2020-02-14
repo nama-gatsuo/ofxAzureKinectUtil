@@ -39,6 +39,8 @@ namespace ofxAzureKinectUtil {
 		const ofTexture& getRayTex() const { return rayTex; }
 		const IMU& getIMU() const { return imu; }
 		const glm::quat& getOrientation() const { return estimatedOrientation; }
+	
+		void setPixelSize(int s) { pixelSize = s; }
 	protected:
 		// Accessed in a main thread
 		bool isOpen;
@@ -73,6 +75,8 @@ namespace ofxAzureKinectUtil {
 
 		IMU imu;
 		glm::quat estimatedOrientation;
+
+		int pixelSize;
 
 		bool createRayTex();
 

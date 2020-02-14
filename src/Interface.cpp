@@ -6,7 +6,7 @@ namespace ofxAzureKinectUtil {
 	Interface::Interface() :
 		isOpen(false),
 		isUseDepth(false), isUseColor(false), isUseIR(false), isUseBodies(false), isUsePointCloud(false), isUsePolygonMesh(false),
-		jpegDecompressor(tjInitDecompress()), ae(true)
+		jpegDecompressor(tjInitDecompress()), ae(true), pixelSize(4)
 	{}
 
 	Interface::~Interface() {
@@ -174,10 +174,10 @@ namespace ofxAzureKinectUtil {
 		k4a_float2_t p;
 		k4a_float3_t ray;
 		
-		for (int y = 0; y < res.y; y += 2) {
+		for (int y = 0; y < res.y; y++) {
 			p.xy.y = static_cast<float>(y);
 
-			for (int x = 0; x < res.x; x += 2) {
+			for (int x = 0; x < res.x; x++) {
 				p.xy.x = static_cast<float>(x);
 				int idx = y * res.x + x;
 
@@ -305,7 +305,6 @@ namespace ofxAzureKinectUtil {
 		const auto frameData = reinterpret_cast<uint16_t*>(frameImg.get_buffer());
 		const auto tableData = reinterpret_cast<k4a_float2_t*>(tableImg.get_buffer());
 
-		const int pixelSize = 4;
 		// list of index of depth map(x-y) - vNum
 		std::unordered_map<int, int> vMap;
 		int indexCount = 0;
