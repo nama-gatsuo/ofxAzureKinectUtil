@@ -3,13 +3,18 @@
 void ofApp::setup() {
 
 	ofxAzureKinectUtil::DeviceSettings s;
+	
 	s.updateColor = true;
 	s.updateDepth = true;
 	s.updateIr = false;
 	s.updatePointCloud = true;
+	s.updatePolygonMesh = false;
+	s.updateBodies = true;
 
 	kinect.open(s);
 	kinect.start();
+
+	panel.setup(kinect.getParameters());
 
 }
 
@@ -21,21 +26,31 @@ void ofApp::draw() {
 
 	if (!kinect.getColorTex().bAllocated()) return;
 
+	//kinect.getBodyIndexTex().draw(0, 0);
+
 	cam.begin();
 	ofPushMatrix();
-	ofRotateX(180);
-	ofMultMatrix(glm::toMat4(kinect.getOrientation()));
-	
 
+	ofMultMatrix(glm::toMat4(kinect.getOrientation()));
+	ofRotateX(180);
 	ofEnableDepthTest();
+	
+	for (auto& s : kinect.getBodySkeletons()) {
+		ofxAzureKinectUtil::Skelton::drawGizmos(s);
+		ofxAzureKinectUtil::Skelton::drawLines(s);
+	}
+
 	kinect.getColorTex().bind();
-	kinect.getPointCloud().draw();
-	kinect.getDepthTex().unbind();
+	kinect.getPointCloud().draw(OF_MESH_POINTS);
+	kinect.getColorTex().unbind();
+
 	ofDisableDepthTest();
 	
 	ofPopMatrix();
 	cam.end();
 	
+	panel.draw();
+
 	ofDrawBitmapStringHighlight("fps: " + ofToString(ofGetFrameRate()), 12, 16);
 }
 

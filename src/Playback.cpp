@@ -35,6 +35,13 @@ namespace ofxAzureKinectUtil {
 			return false;
 		}
 
+		switch (config.camera_fps) {
+		case K4A_FRAMES_PER_SECOND_5: frameTime = 1000.f / 5.f; break;
+		case K4A_FRAMES_PER_SECOND_15: frameTime = 1000.f / 15.f; break;
+		case K4A_FRAMES_PER_SECOND_30: frameTime = 1000.f / 30.f; break;
+		default: frameTime = 1000.f / 30.f; break;
+		}
+
 		auto durationMS = std::chrono::duration_cast<std::chrono::milliseconds>(playback.get_recording_length());
 		int min = durationMS.count() / 1000 / 60;
 		int sec = (durationMS.count() - min * 1000 * 60) / 1000;
@@ -97,7 +104,11 @@ namespace ofxAzureKinectUtil {
 
 		try {
 			bool isEnd = !playback.get_next_capture(&capture);
-			if (isEnd) playback.seek_timestamp(std::chrono::microseconds(0), K4A_PLAYBACK_SEEK_BEGIN);
+			if (isEnd) {
+				playback.seek_timestamp(std::chrono::microseconds(0), K4A_PLAYBACK_SEEK_BEGIN);
+				resetOrientationEstimation();
+				playback.get_next_capture(&capture);
+			}
 		} catch (const k4a::error & e) {
 			ofLogError(__FUNCTION__) << e.what();
 			return;

@@ -6,15 +6,20 @@ namespace ofxAzureKinectUtil {
 	Interface::Interface() :
 		isOpen(false),
 		isUseDepth(false), isUseColor(false), isUseIR(false), isUseBodies(false), isUsePointCloud(false), isUsePolygonMesh(false),
-		jpegDecompressor(tjInitDecompress()), ae(true), pixelSize(4)
-	{}
+		jpegDecompressor(tjInitDecompress()), ae(true)
+	{
+		group.setName("ofxAzureKinect");
+		group.add(pixelSize.set("pixelSize", 2, 1, 10));
+		group.add(rad.set("depthRadius", 6000, 100, 10000));
+	}
 
 	Interface::~Interface() {
 		tjDestroy(jpegDecompressor);
 	}
 
 	bool Interface::start() {
-		if (isUsePointCloud || isUsePolygonMesh) {
+
+		if (isUseDepth || isUsePointCloud || isUsePolygonMesh) {
 			// Create transformation.
 			transformation = k4a::transformation(this->calibration);
 		}
@@ -24,7 +29,6 @@ namespace ofxAzureKinectUtil {
 			k4abt_tracker_create(&calibration, trackerConfig, &bodyTracker);
 		}
 
-		
 		// Create ray texture for mapping depth texture
 		createRayTex();
 		
@@ -60,14 +64,18 @@ namespace ofxAzureKinectUtil {
 		if (isFrameNew) {
 
 			// Estimate orientation from IMU
-			{
+			
+			if (fd.imu.timestamp > imu.timestamp && imu.timestamp != 0) {
 				double dt = double(fd.imu.timestamp - imu.timestamp) * 1e-6;
 				imu = std::move(fd.imu);
-				ae.update(dt, imu.gyro.y, imu.gyro.z, imu.gyro.x, imu.acc.y, imu.acc.z, imu.acc.x, 0, 0, 0);
+				// Astimator coordinate system is different from kinect's
+				ae.update(dt, imu.gyro.y, - imu.gyro.z, imu.gyro.x, imu.acc.y, - imu.acc.z, imu.acc.x, 0, 0, 0);
 				double q[4];
 				ae.getAttitude(q);
-				const static glm::quat bias = glm::quat(glm::toQuat(glm::rotate(float(PI), glm::vec3(0, 0, 1)) * glm::rotate(float(-HALF_PI), glm::vec3(1, 0, 0))));
+				const glm::quat bias = glm::toQuat(glm::rotate(float(- HALF_PI), glm::vec3(1, 0, 0)));
 				estimatedOrientation = bias * glm::quat(q[0], q[1], q[2], q[3]);
+			} else {
+				imu = std::move(fd.imu);
 			}
 
 			// update
@@ -95,8 +103,8 @@ namespace ofxAzureKinectUtil {
 						colorTex.setTextureMinMagFilter(GL_NEAREST, GL_NEAREST);
 						colorTex.bind();
 						{
-							glTexParameteri(this->colorTex.texData.textureTarget, GL_TEXTURE_SWIZZLE_R, GL_BLUE);
-							glTexParameteri(this->colorTex.texData.textureTarget, GL_TEXTURE_SWIZZLE_B, GL_RED);
+							glTexParameteri(colorTex.texData.textureTarget, GL_TEXTURE_SWIZZLE_R, GL_BLUE);
+							glTexParameteri(colorTex.texData.textureTarget, GL_TEXTURE_SWIZZLE_B, GL_RED);
 						}
 						colorTex.unbind();
 					}
@@ -132,10 +140,10 @@ namespace ofxAzureKinectUtil {
 				if (!bodyIndexTex.isAllocated()) {
 					if (fd.bodyIndexPix.isAllocated()) {
 						bodyIndexTex.allocate(
-							fd.bodyIndexPix.getWidth(), fd.bodyIndexPix.getHeight(), GL_R
+							fd.bodyIndexPix.getWidth(), fd.bodyIndexPix.getHeight(), GL_R8
 						);
-						this->bodyIndexTex.setTextureMinMagFilter(GL_NEAREST, GL_NEAREST);
-						this->bodyIndexTex.setRGToRGBASwizzles(true);
+						bodyIndexTex.setTextureMinMagFilter(GL_NEAREST, GL_NEAREST);
+						bodyIndexTex.setRGToRGBASwizzles(true);
 					}
 				} else {
 					if (fd.bodyIndexPix.isAllocated()) {
@@ -231,7 +239,7 @@ namespace ofxAzureKinectUtil {
 
 	}
 
-	ofMesh Interface::createPointCloud(k4a::image& frameImg, k4a::image& tableImg) {
+	ofMesh Interface::createPointCloud(const k4a::image& frameImg, const k4a::image& tableImg) {
 
 		ofMesh pc;
 		pc.setMode(OF_PRIMITIVE_POINTS);
@@ -243,26 +251,29 @@ namespace ofxAzureKinectUtil {
 			return ofMesh();
 		}
 
-		const auto frameData = reinterpret_cast<uint16_t*>(frameImg.get_buffer());
-		const auto tableData = reinterpret_cast<k4a_float2_t*>(tableImg.get_buffer());
+		const auto frameData = reinterpret_cast<const uint16_t*>(frameImg.get_buffer());
+		const auto tableData = reinterpret_cast<const k4a_float2_t*>(tableImg.get_buffer());
 
-		for (int y = 0; y < res.y; ++y) {
-			for (int x = 0; x < res.x; ++x) {
+		for (int y = 0; y < res.y - pixelSize; y += pixelSize) {
+			for (int x = 0; x < res.x - pixelSize; x += pixelSize) {
 				
 				int idx = y * res.x + x;
 
 				bool isValid = frameData[idx] != 0 && !isnan(tableData[idx].xy.x) && !isnan(tableData[idx].xy.y);
 				isValid = isValid && !(tableData[idx].xy.x == 0 && tableData[idx].xy.y == 0);
+				
+				float depthVal = static_cast<float>(frameData[idx]);
+				glm::vec3 p(
+					tableData[idx].xy.x * depthVal,
+					tableData[idx].xy.y * depthVal,
+					depthVal
+				);
 
-				if (isValid) {
-					float depthVal = static_cast<float>(frameData[idx]);
+				bool isInArea = glm::length(p) < rad && glm::length(p) != 0.f;
 
-					pc.addVertex(- glm::vec3(
-						tableData[idx].xy.x * depthVal,
-						tableData[idx].xy.y * depthVal,
-						- depthVal
-					));
+				if (isValid && isInArea) {
 
+					pc.addVertex(p);
 					pc.addTexCoord(glm::vec2(x, y));
 				}
 			}
@@ -271,26 +282,7 @@ namespace ofxAzureKinectUtil {
 		return pc;
 	}
 
-	ofMesh Interface::createPointCloud(k4a::image& depthRemmaped) {
-
-		const glm::ivec2 res(depthRemmaped.get_width_pixels(), depthRemmaped.get_height_pixels());
-
-		k4a::image result = k4a::image::create(
-			K4A_IMAGE_FORMAT_CUSTOM,
-			res.x, res.y,
-			res.x * static_cast<int>(sizeof(uint16_t) * 3)
-		);
-		try {
-			transformation.depth_image_to_point_cloud(depthRemmaped, K4A_CALIBRATION_TYPE_COLOR, &result);
-		} catch (const k4a::error & e) {
-			ofLogError(__FUNCTION__) << e.what();
-			return ofMesh();
-		}
-
-		return ofMesh();
-	}
-
-	ofMesh Interface::createPolygonMesh(k4a::image& frameImg, k4a::image& tableImg) {
+	ofMesh Interface::createPolygonMesh(const k4a::image& frameImg, const k4a::image& tableImg) {
 		ofMesh mesh;
 		mesh.setMode(OF_PRIMITIVE_TRIANGLES);
 
@@ -302,8 +294,8 @@ namespace ofxAzureKinectUtil {
 			return ofMesh();
 		}
 
-		const auto frameData = reinterpret_cast<uint16_t*>(frameImg.get_buffer());
-		const auto tableData = reinterpret_cast<k4a_float2_t*>(tableImg.get_buffer());
+		const auto frameData = reinterpret_cast<const uint16_t*>(frameImg.get_buffer());
+		const auto tableData = reinterpret_cast<const k4a_float2_t*>(tableImg.get_buffer());
 
 		// list of index of depth map(x-y) - vNum
 		std::unordered_map<int, int> vMap;
@@ -327,10 +319,11 @@ namespace ofxAzureKinectUtil {
 					bool isValid = frameData[idx] != 0 && !isnan(tableData[idx].xy.x) && !isnan(tableData[idx].xy.y);
 					isValid = isValid && !(tableData[idx].xy.x == 0 && tableData[idx].xy.y == 0);
 
+					// Depth value from K4A_IMAGE_FORMAT_DEPTH16 is in unit of millimeter
 					float depthVal = static_cast<float>(frameData[idx]);
-					glm::vec3 p = -glm::vec3(tableData[idx].xy.x, tableData[idx].xy.y, -1.f) * depthVal;
+					glm::vec3 p = glm::vec3(tableData[idx].xy.x, tableData[idx].xy.y, 1.f) * depthVal;
 
-					bool isInArea = glm::length(p * 0.001f) < 1.4f && glm::length(p * 0.001f) != 0.f;
+					bool isInArea = glm::length(p) < rad && glm::length(p) != 0.f;
 
 					if (isValid && isInArea) {
 						pos[i] = p;
@@ -378,12 +371,19 @@ namespace ofxAzureKinectUtil {
 
 	}
 
+	void Interface::resetOrientationEstimation() {
+		ae.reset();
+		imu.timestamp = 0;
+	}
+
 	void Interface::threadedFunction() {
 		bool r = true;
 
 		while (request.receive(r)) {
 			FrameData newFd;
 			
+			uint64_t startTime = ofGetElapsedTimeMicros();
+
 			updateIMU();
 			newFd.imu = {
 				imuSample.temperature,
@@ -394,8 +394,8 @@ namespace ofxAzureKinectUtil {
 
 			updateCapture();
 
-			k4a::image& depth = this->capture.get_depth_image();
-			k4a::image& color = this->capture.get_color_image();
+			k4a::image& depth = capture.get_depth_image();
+			k4a::image& color = capture.get_color_image();
 
 			if (isUseColor) {
 				if (color) {
@@ -504,8 +504,14 @@ namespace ofxAzureKinectUtil {
 
 			response.send(std::move(newFd));
 
+			// Sync with certain frame rate the kinect has
+			uint64_t endTime = ofGetElapsedTimeMicros();
+			int dt = (endTime - startTime) / 1000.f;
+			int waitTime = frameTime - dt;
+			if (waitTime < 0) continue;
+			else ofSleepMillis(waitTime);
+		
 		}
-
 
 	}
 

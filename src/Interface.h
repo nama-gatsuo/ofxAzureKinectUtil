@@ -41,6 +41,7 @@ namespace ofxAzureKinectUtil {
 		const glm::quat& getOrientation() const { return estimatedOrientation; }
 	
 		void setPixelSize(int s) { pixelSize = s; }
+		void setRad(float r) { rad = r; }
 	protected:
 		// Accessed in a main thread
 		bool isOpen;
@@ -76,7 +77,8 @@ namespace ofxAzureKinectUtil {
 		IMU imu;
 		glm::quat estimatedOrientation;
 
-		int pixelSize;
+		ofParameter<int> pixelSize;
+		ofParameter<float> rad;
 
 		bool createRayTex();
 
@@ -88,6 +90,7 @@ namespace ofxAzureKinectUtil {
 		bool isUseBodies;
 		bool isUsePointCloud;
 		bool isUsePolygonMesh;
+		float frameTime; // millisec
 
 		k4a::capture capture;
 		k4a::calibration calibration;
@@ -98,12 +101,12 @@ namespace ofxAzureKinectUtil {
 
 		virtual void updateCapture() = 0;
 		virtual void updateIMU() = 0;
+		void resetOrientationEstimation();
 	private:
 		void threadedFunction() override;
 		ofShortPixels createDepthRemapped(const k4a::image& depth, const k4a::image& color);
-		ofMesh createPointCloud(k4a::image& frameImg, k4a::image& tableImg);
-		ofMesh createPointCloud(k4a::image& depth);
-		ofMesh createPolygonMesh(k4a::image& frameImg, k4a::image& tableImg);
+		ofMesh createPointCloud(const k4a::image& frameImg, const k4a::image& tableImg);
+		ofMesh createPolygonMesh(const k4a::image& frameImg, const k4a::image& tableImg);
 
 		k4a::image depthRemappedImg;
 

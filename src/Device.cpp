@@ -31,7 +31,7 @@ namespace ofxAzureKinectUtil {
 		}
 
 		index = s.deviceIndex;
-
+		
 		config = {
 			s.colorFormat,
 			s.colorResolution,
@@ -46,6 +46,13 @@ namespace ofxAzureKinectUtil {
 		isUseBodies = s.updateBodies;
 		isUsePointCloud = s.updatePointCloud;
 		isUsePolygonMesh = s.updatePolygonMesh;
+		
+		switch (s.cameraFps) {
+			case K4A_FRAMES_PER_SECOND_5: frameTime = 1000.f / 5.f; break;
+			case K4A_FRAMES_PER_SECOND_15: frameTime = 1000.f / 15.f; break;
+			case K4A_FRAMES_PER_SECOND_30: frameTime = 1000.f / 30.f; break;
+			default: frameTime = 1000.f / 30.f; break;
+		}
 
 		trackerConfig.sensor_orientation = s.sensorOrientation;
 
