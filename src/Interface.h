@@ -24,6 +24,7 @@ namespace ofxAzureKinectUtil {
 
 		/// Shoud be called from main thread such as ofApp::update()
 		void update();
+		bool isFrameNew() { return bFrameNew; }
 
 		ofParameterGroup& getParameters() { return group; }
 		const ofTexture& getIrTex() const { return irTex; }
@@ -45,7 +46,9 @@ namespace ofxAzureKinectUtil {
 	protected:
 		// Accessed in a main thread
 		bool isOpen;
-		
+		bool bFrameNew;
+		int frameNum;
+
 		ofParameterGroup group;
 
 		struct FrameData {

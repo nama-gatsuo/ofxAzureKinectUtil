@@ -30,6 +30,9 @@ namespace ofxAzureKinectUtil {
 
 		bool start() override;
 		bool stop() override;
+
+		int getCurrentFrame() const { return frameNum; }
+
 	protected:
 		void updateCapture() override;
 		void updateIMU() override;

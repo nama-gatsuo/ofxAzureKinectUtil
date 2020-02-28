@@ -4,7 +4,7 @@
 namespace ofxAzureKinectUtil {
 	
 	Interface::Interface() :
-		isOpen(false),
+		isOpen(false), bFrameNew(false), frameNum(-1),
 		isUseDepth(false), isUseColor(false), isUseIR(false), isUseBodies(false), isUsePointCloud(false), isUsePolygonMesh(false),
 		jpegDecompressor(tjInitDecompress()), ae(true)
 	{
@@ -55,14 +55,15 @@ namespace ofxAzureKinectUtil {
 	void Interface::update() {
 		bool r = true;
 		request.send(r);
-		bool isFrameNew = false;
+		bFrameNew = false;
 
 		while (response.tryReceive(fd)) {
-			isFrameNew = true;
+			bFrameNew = true;
 		}
 
-		if (isFrameNew) {
+		if (bFrameNew) {
 
+			frameNum++;
 			// Estimate orientation from IMU
 			
 			if (fd.imu.timestamp > imu.timestamp && imu.timestamp != 0) {

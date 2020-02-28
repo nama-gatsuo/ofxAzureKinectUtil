@@ -104,12 +104,13 @@ namespace ofxAzureKinectUtil {
 
 		try {
 			bool isEnd = !playback.get_next_capture(&capture);
+
 			if (isEnd) {
 				playback.seek_timestamp(std::chrono::microseconds(0), K4A_PLAYBACK_SEEK_BEGIN);
 				resetOrientationEstimation();
-				playback.get_next_capture(&capture);
+				frameNum = -1;
 			}
-		} catch (const k4a::error & e) {
+		} catch (const k4a::error& e) {
 			ofLogError(__FUNCTION__) << e.what();
 			return;
 		}
@@ -118,7 +119,7 @@ namespace ofxAzureKinectUtil {
 	void Playback::updateIMU() {
 		try {
 			playback.get_next_imu_sample(&imuSample);
-		} catch (const k4a::error & e) {
+		} catch (const k4a::error& e) {
 			ofLogError(__FUNCTION__) << e.what();
 			return;
 		}
