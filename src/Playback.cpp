@@ -9,10 +9,10 @@ namespace ofxAzureKinectUtil {
 		, updateIr(false)
 		, updateBodies(false)
 		, updatePointCloud(true)
-		, updatePolygonMesh(false)
-	{}
+		, updatePolygonMesh(false) {
+	}
 
-	Playback::Playback() : isPlaying(false) {}
+	Playback::Playback() : bLoop(true) {}
 	Playback::~Playback() {}
 
 	bool Playback::open(const Settings& s) {
@@ -29,7 +29,7 @@ namespace ofxAzureKinectUtil {
 			playback = k4a::playback::open(fileName.data());
 			config = playback.get_record_configuration();
 
-		} catch (const k4a::error& e) {
+		} catch (const k4a::error & e) {
 			ofLogError(__FUNCTION__) << e.what();
 			playback.close();
 			return false;
@@ -42,49 +42,40 @@ namespace ofxAzureKinectUtil {
 		default: frameTime = 1000.f / 30.f; break;
 		}
 
-		auto durationMS = std::chrono::duration_cast<std::chrono::milliseconds>(playback.get_recording_length());
-		int min = durationMS.count() / 1000 / 60;
-		int sec = (durationMS.count() - min * 1000 * 60) / 1000;
-		int msec = durationMS.count() % 1000;
+		duration = std::chrono::duration_cast<std::chrono::milliseconds>(playback.get_recording_length());
+		bOpen = true;
 
-		isOpen = true;
 		ofLogNotice(__FUNCTION__) << "Successfully opened playback file " << s.fileName << ".";
-		ofLogNotice(__FUNCTION__) << "duration: " << min << "\"" << sec << "\'" << msec << ".";
-		
-		int fps = 30;
-		switch (config.camera_fps)
-		{
-			case K4A_FRAMES_PER_SECOND_5: fps = 5; break;
-			case K4A_FRAMES_PER_SECOND_15: fps = 15; break;
-			case K4A_FRAMES_PER_SECOND_30: fps = 30; break;
-			default: break;
-		}
-		timePerFrame = std::chrono::milliseconds(1000 / 60);
-		ofLogNotice(__FUNCTION__) << "fps: " << fps << ".";
-		return isOpen;
+		ofLogNotice(__FUNCTION__) << "duration: " << toString(duration) << ".";
+
+		return bOpen;
 	}
 
 	bool Playback::close() {
-		if (!isOpen) return false;
-		if (isPlaying) stop();
+		if (!bOpen) return false;
+		if (bPlaying) stop();
 
 		playback.close();
 		return true;
 	}
 
 	bool Playback::start() {
-		if (isPlaying) return false;
 
 		try {
 			calibration = playback.get_calibration();
+			playback.seek_timestamp(std::chrono::microseconds(0), K4A_PLAYBACK_SEEK_BEGIN);
+			// playback.seek_timestamp(std::chrono::duration_cast<std::chrono::microseconds>(currentTime), K4A_PLAYBACK_SEEK_BEGIN);
 		} catch (const k4a::error & e) {
 			ofLogError(__FUNCTION__) << e.what();
 			return false;
 		}
 
+		frameCount = -1;
+		resetOrientationEstimation();
+
 		Interface::start();
 
-		isPlaying = true;
+		bPlaying = true;
 
 		startThread();
 
@@ -93,7 +84,7 @@ namespace ofxAzureKinectUtil {
 
 	bool Playback::stop() {
 
-		isPlaying = false;
+		bPlaying = false;
 
 		Interface::stop();
 
@@ -102,15 +93,21 @@ namespace ofxAzureKinectUtil {
 
 	void Playback::updateCapture() {
 
+		if (!bPlaying) return;
+
 		try {
 			bool isEnd = !playback.get_next_capture(&capture);
 
 			if (isEnd) {
-				playback.seek_timestamp(std::chrono::microseconds(0), K4A_PLAYBACK_SEEK_BEGIN);
-				resetOrientationEstimation();
-				frameNum = -1;
+				if (bLoop) {
+					playback.seek_timestamp(std::chrono::microseconds(0), K4A_PLAYBACK_SEEK_BEGIN);
+					resetOrientationEstimation();
+					frameCount = -1;
+				} else {
+					stop();
+				}
 			}
-		} catch (const k4a::error& e) {
+		} catch (const k4a::error & e) {
 			ofLogError(__FUNCTION__) << e.what();
 			return;
 		}
@@ -119,10 +116,21 @@ namespace ofxAzureKinectUtil {
 	void Playback::updateIMU() {
 		try {
 			playback.get_next_imu_sample(&imuSample);
-		} catch (const k4a::error& e) {
+		} catch (const k4a::error & e) {
 			ofLogError(__FUNCTION__) << e.what();
 			return;
 		}
+	}
+	std::string Playback::toString(std::chrono::milliseconds duration) {
+		int min = duration.count() / 1000 / 60;
+		int sec = (duration.count() - min * 1000 * 60) / 1000;
+		int msec = duration.count() % 1000;
+		
+		std::stringstream str;
+		if (sec < 10) str << min << "\'0" << sec << "." << msec;
+		else str << min << "\'" << sec << "." << msec;
+		
+		return str.str();
 	}
 }
 

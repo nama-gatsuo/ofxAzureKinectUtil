@@ -31,16 +31,30 @@ namespace ofxAzureKinectUtil {
 		bool start() override;
 		bool stop() override;
 
-		int getCurrentFrame() const { return frameNum; }
+		void resume() { bPlaying = true; }
+		void pause() { bPlaying = false; }
+		
+		float getProgress() const { return (float)currentTime.count() / (float)duration.count(); }
+		bool isPlaying() const { return bPlaying; }
+
+		bool getLoop() const { return bLoop; }
+		void setLoop(bool t) { bLoop = t; }
+
+		const std::chrono::milliseconds& getDuration() const { return duration; }
+		std::string getDurationString() const { return toString(duration); }
 
 	protected:
 		void updateCapture() override;
 		void updateIMU() override;
 	private:
-		bool isPlaying;
+		static std::string toString(std::chrono::milliseconds duration);
+		bool bLoop;
 		k4a::playback playback;
 		k4a_record_configuration_t config;
-		std::chrono::milliseconds timePerFrame;
+
+		std::chrono::milliseconds duration;
+		size_t totalFrame;
+
 	};
 
 	using PlaybackSettings = Playback::Settings;

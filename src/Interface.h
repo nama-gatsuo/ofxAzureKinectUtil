@@ -40,14 +40,16 @@ namespace ofxAzureKinectUtil {
 		const ofTexture& getRayTex() const { return rayTex; }
 		const IMU& getIMU() const { return imu; }
 		const glm::quat& getOrientation() const { return estimatedOrientation; }
-	
+		const std::chrono::milliseconds& getCurrentTime() { return currentTime; }
+		size_t getCurrentFrameCount() { return frameCount; }
+
 		void setPixelSize(int s) { pixelSize = s; }
 		void setRad(float r) { rad = r; }
 	protected:
 		// Accessed in a main thread
-		bool isOpen;
+		bool bOpen;
+		bool bPlaying;
 		bool bFrameNew;
-		int frameNum;
 
 		ofParameterGroup group;
 
@@ -102,6 +104,9 @@ namespace ofxAzureKinectUtil {
 		k4abt_tracker_t bodyTracker;
 		k4a_imu_sample_t imuSample;
 
+		std::chrono::milliseconds currentTime;
+		size_t frameCount;
+
 		virtual void updateCapture() = 0;
 		virtual void updateIMU() = 0;
 		void resetOrientationEstimation();
@@ -118,6 +123,25 @@ namespace ofxAzureKinectUtil {
 
 		tjhandle jpegDecompressor;
 		stateestimation::AttitudeEstimator ae;
+
+		class ScopedFrameSync {
+		public:
+			ScopedFrameSync(float frameTimeInMill) :
+				startTime(ofGetElapsedTimeMicros()),
+				frameTime(frameTimeInMill)
+			{}
+			~ScopedFrameSync() {
+				// Sync with certain frame rate the kinect has
+				uint64_t endTime = ofGetElapsedTimeMicros();
+				int dt = (endTime - startTime) / 1000.f;
+				int waitTime = frameTime - dt;
+				if (waitTime > 0) ofSleepMillis(waitTime);
+			}
+
+		private:
+			const uint64_t startTime;
+			const float frameTime;
+		};
 
 	};
 }

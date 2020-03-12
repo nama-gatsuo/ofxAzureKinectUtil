@@ -46,7 +46,6 @@ namespace ofxAzureKinectUtil {
 		void updateIMU() override;
 	private:
 		int index;
-		bool isStreaming;
 		std::string serialNumber;
 		k4a::device device;
 

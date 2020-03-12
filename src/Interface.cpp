@@ -4,7 +4,7 @@
 namespace ofxAzureKinectUtil {
 	
 	Interface::Interface() :
-		isOpen(false), bFrameNew(false), frameNum(-1),
+		bOpen(false), bPlaying(false), bFrameNew(false), frameCount(-1),
 		isUseDepth(false), isUseColor(false), isUseIR(false), isUseBodies(false), isUsePointCloud(false), isUsePolygonMesh(false),
 		jpegDecompressor(tjInitDecompress()), ae(true)
 	{
@@ -63,9 +63,7 @@ namespace ofxAzureKinectUtil {
 
 		if (bFrameNew) {
 
-			frameNum++;
 			// Estimate orientation from IMU
-			
 			if (fd.imu.timestamp > imu.timestamp && imu.timestamp != 0) {
 				double dt = double(fd.imu.timestamp - imu.timestamp) * 1e-6;
 				imu = std::move(fd.imu);
@@ -156,6 +154,7 @@ namespace ofxAzureKinectUtil {
 				
 			}
 
+			frameCount++;
 		}
 
 	}
@@ -383,7 +382,7 @@ namespace ofxAzureKinectUtil {
 		while (request.receive(r)) {
 			FrameData newFd;
 			
-			uint64_t startTime = ofGetElapsedTimeMicros();
+			ScopedFrameSync frameSync(frameTime);
 
 			updateIMU();
 			newFd.imu = {
@@ -394,9 +393,17 @@ namespace ofxAzureKinectUtil {
 			};
 
 			updateCapture();
+			if (!capture) continue;
 
 			k4a::image& depth = capture.get_depth_image();
 			k4a::image& color = capture.get_color_image();
+
+			if (!color || !depth) {
+				ofLogNotice(__FUNCTION__) << "Frame is invalid!";
+				continue;
+			}
+
+			currentTime = std::chrono::duration_cast<std::chrono::milliseconds>(depth.get_device_timestamp());
 
 			if (isUseColor) {
 				if (color) {
@@ -505,13 +512,6 @@ namespace ofxAzureKinectUtil {
 
 			response.send(std::move(newFd));
 
-			// Sync with certain frame rate the kinect has
-			uint64_t endTime = ofGetElapsedTimeMicros();
-			int dt = (endTime - startTime) / 1000.f;
-			int waitTime = frameTime - dt;
-			if (waitTime < 0) continue;
-			else ofSleepMillis(waitTime);
-		
 		}
 
 	}

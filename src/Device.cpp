@@ -20,12 +20,12 @@ namespace ofxAzureKinectUtil {
 		, synchronized(true) {
 	}
 
-	Device::Device() : index(-1), isStreaming(false) {}
+	Device::Device() : index(-1) {}
 	Device::~Device() {}
 
 	bool Device::open(const Settings& s) {
 
-		if (isOpen) {
+		if (bOpen) {
 			ofLogWarning(__FUNCTION__) << "Device " << index << " already open!";
 			return false;
 		}
@@ -70,27 +70,27 @@ namespace ofxAzureKinectUtil {
 			return false;
 		}
 
-		isOpen = true;
+		bOpen = true;
 		ofLogNotice(__FUNCTION__) << "Successfully opened device " << s.deviceIndex << " with serial number " << this->serialNumber << ".";
 
-		return isOpen;
+		return bOpen;
 	}
 
 	bool Device::close() {
-		if (!isOpen) return false;
-		if (isStreaming) stop();
+		if (!bOpen) return false;
+		if (bPlaying) stop();
 
 		device.close();
 
 		index = -1;
-		isOpen = false;
+		bOpen = false;
 		serialNumber = "";
 
 		return true;
 	}
 
 	bool Device::start() {
-		if (!isOpen) {
+		if (!bOpen) {
 			ofLogError(__FUNCTION__) << "Open device before starting cameras!";
 			return false;
 		}
@@ -114,21 +114,22 @@ namespace ofxAzureKinectUtil {
 			return false;
 		}
 
-		isStreaming = true;
-
 		startThread();
 
-		return true;
+		bPlaying = true;
+
+		return bPlaying;
 	}
 
 	bool Device::stop() {
 
-		isStreaming = false;
+		bPlaying = false;
 
 		Interface::stop();
 
 		device.stop_cameras();
 		device.stop_imu();
+
 		return true;
 	}
 
