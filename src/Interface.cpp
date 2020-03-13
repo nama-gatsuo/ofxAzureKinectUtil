@@ -35,7 +35,11 @@ namespace ofxAzureKinectUtil {
 		return true;
 	}
 
-	bool Interface::stop() {
+	void Interface::stop() {
+		bPlaying = false;
+	}
+
+	void Interface::close() {
 
 		transformation.destroy();
 
@@ -44,12 +48,11 @@ namespace ofxAzureKinectUtil {
 			k4abt_tracker_destroy(bodyTracker);
 			bodyTracker = nullptr;
 		}
-		
+
 		request.close();
 		response.close();
 		waitForThread(true); // wait and stop
-
-		return true;
+		
 	}
 
 	void Interface::update() {

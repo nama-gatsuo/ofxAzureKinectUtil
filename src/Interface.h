@@ -20,7 +20,8 @@ namespace ofxAzureKinectUtil {
 		virtual ~Interface();
 
 		virtual bool start();
-		virtual bool stop();
+		virtual void stop();
+		virtual void close();
 
 		/// Shoud be called from main thread such as ofApp::update()
 		void update();

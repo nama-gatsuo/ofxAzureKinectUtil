@@ -26,10 +26,10 @@ namespace ofxAzureKinectUtil {
 		~Playback();
 
 		bool open(const Settings& s);
-		bool close();
+		void close() override;
 
 		bool start() override;
-		bool stop() override;
+		void stop() override;
 
 		void resume() { bPlaying = true; }
 		void pause() { bPlaying = false; }

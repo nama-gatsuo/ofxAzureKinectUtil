@@ -76,17 +76,18 @@ namespace ofxAzureKinectUtil {
 		return bOpen;
 	}
 
-	bool Device::close() {
-		if (!bOpen) return false;
+	void Device::close() {
+		if (!bOpen) return;
 		if (bPlaying) stop();
-
-		device.close();
 
 		index = -1;
 		bOpen = false;
 		serialNumber = "";
 
-		return true;
+		Interface::close();
+
+		device.close();
+		
 	}
 
 	bool Device::start() {
@@ -121,21 +122,15 @@ namespace ofxAzureKinectUtil {
 		return bPlaying;
 	}
 
-	bool Device::stop() {
-
-		bPlaying = false;
-
+	void Device::stop() {
 		Interface::stop();
-
 		device.stop_cameras();
 		device.stop_imu();
-
-		return true;
 	}
 
 	void Device::updateCapture() {
 		try {
-			if (!device.get_capture(&capture, std::chrono::milliseconds(TIMEOUT_IN_MS))) {
+			if (!device.get_capture(&capture, std::chrono::milliseconds((int)frameTime))) {
 				ofLogWarning(__FUNCTION__) << "Timed out waiting for a capture for device " << index << ".";
 				return;
 			}

@@ -34,10 +34,10 @@ namespace ofxAzureKinectUtil {
 		~Device();
 
 		bool open(const Settings& s);
-		bool close();
+		void close() override;
 
 		bool start() override;
-		bool stop() override;
+		void stop() override;
 
 		static int getInstalledCount() { return k4a_device_get_installed_count(); }
 

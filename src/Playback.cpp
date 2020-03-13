@@ -51,12 +51,12 @@ namespace ofxAzureKinectUtil {
 		return bOpen;
 	}
 
-	bool Playback::close() {
-		if (!bOpen) return false;
+	void Playback::close() {
+		if (!bOpen) return;
 		if (bPlaying) stop();
 
+		Interface::close();
 		playback.close();
-		return true;
 	}
 
 	bool Playback::start() {
@@ -82,13 +82,8 @@ namespace ofxAzureKinectUtil {
 		return true;
 	}
 
-	bool Playback::stop() {
-
-		bPlaying = false;
-
+	void Playback::stop() {
 		Interface::stop();
-
-		return true;
 	}
 
 	void Playback::updateCapture() {
