@@ -41,8 +41,8 @@ namespace ofxAzureKinectUtil {
 		const ofTexture& getRayTex() const { return rayTex; }
 		const IMU& getIMU() const { return imu; }
 		const glm::quat& getOrientation() const { return estimatedOrientation; }
-		const std::chrono::milliseconds& getCurrentTime() { return currentTime; }
-		size_t getCurrentFrameCount() { return frameCount; }
+		const std::chrono::milliseconds& getCurrentTime() const { return currentTime; }
+		size_t getCurrentFrameCount() const { return frameCount; }
 
 		void setPixelSize(int s) { pixelSize = s; }
 		void setRad(float r) { rad = r; }
