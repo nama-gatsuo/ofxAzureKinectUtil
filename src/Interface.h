@@ -85,6 +85,7 @@ namespace ofxAzureKinectUtil {
 
 		ofParameter<int> pixelSize;
 		ofParameter<float> rad;
+		ofParameter<bool> frameSync;
 
 		bool createRayTex();
 
@@ -127,19 +128,21 @@ namespace ofxAzureKinectUtil {
 
 		class ScopedFrameSync {
 		public:
-			ScopedFrameSync(float frameTimeInMill) :
+			ScopedFrameSync(float frameTimeInMill, bool enabled=true) :
 				startTime(ofGetElapsedTimeMicros()),
-				frameTime(frameTimeInMill)
+				frameTime(frameTimeInMill),
+				enabled(enabled)
 			{}
 			~ScopedFrameSync() {
 				// Sync with certain frame rate the kinect has
 				uint64_t endTime = ofGetElapsedTimeMicros();
 				int dt = (endTime - startTime) / 1000.f;
 				int waitTime = frameTime - dt;
-				if (waitTime > 0) ofSleepMillis(waitTime);
+				if (enabled && waitTime > 0) ofSleepMillis(waitTime);
 			}
 
 		private:
+			const bool enabled;
 			const uint64_t startTime;
 			const float frameTime;
 		};

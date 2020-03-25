@@ -12,7 +12,7 @@ namespace ofxAzureKinectUtil {
 		, updatePolygonMesh(false) {
 	}
 
-	Playback::Playback() : bLoop(true) {}
+	Playback::Playback() : bLoop(true), bEnd(false) {}
 	Playback::~Playback() {}
 
 	bool Playback::open(const Settings& s) {
@@ -76,6 +76,7 @@ namespace ofxAzureKinectUtil {
 		Interface::start();
 
 		bPlaying = true;
+		bEnd = false;
 
 		startThread();
 
@@ -91,13 +92,14 @@ namespace ofxAzureKinectUtil {
 		if (!bPlaying) return;
 
 		try {
-			bool isEnd = !playback.get_next_capture(&capture);
+			bEnd = !playback.get_next_capture(&capture);
 
-			if (isEnd) {
+			if (bEnd) {
 				if (bLoop) {
 					playback.seek_timestamp(std::chrono::microseconds(0), K4A_PLAYBACK_SEEK_BEGIN);
 					resetOrientationEstimation();
 					frameCount = -1;
+					bEnd = false;
 				} else {
 					stop();
 				}

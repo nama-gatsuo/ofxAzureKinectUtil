@@ -9,8 +9,9 @@ namespace ofxAzureKinectUtil {
 		jpegDecompressor(tjInitDecompress()), ae(true)
 	{
 		group.setName("ofxAzureKinect");
-		group.add(pixelSize.set("pixelSize", 2, 1, 10));
+		group.add(pixelSize.set("pixelSize", 2, 1, 40));
 		group.add(rad.set("depthRadius", 6000, 100, 10000));
+		group.add(frameSync.set("frameSync", true));
 	}
 
 	Interface::~Interface() {
@@ -19,9 +20,9 @@ namespace ofxAzureKinectUtil {
 
 	bool Interface::start() {
 
-		if (isUseDepth || isUsePointCloud || isUsePolygonMesh) {
+		if (isUseDepth || isUsePointCloud || isUsePolygonMesh || isUseBodies) {
 			// Create transformation.
-			transformation = k4a::transformation(this->calibration);
+			transformation = k4a::transformation(calibration);
 		}
 
 		if (isUseBodies) {
@@ -385,7 +386,7 @@ namespace ofxAzureKinectUtil {
 		while (request.receive(r)) {
 			FrameData newFd;
 			
-			ScopedFrameSync frameSync(frameTime);
+			ScopedFrameSync sync(frameTime, frameSync);
 
 			updateIMU();
 			newFd.imu = {
@@ -458,12 +459,11 @@ namespace ofxAzureKinectUtil {
 				}
 			}
 
-
 			depth.reset();
 			color.reset();
 			
 			if (isUseIR) {
-				k4a::image& img = this->capture.get_ir_image();
+				k4a::image& img = capture.get_ir_image();
 				if (img) {
 					const glm::ivec2 res(img.get_width_pixels(), img.get_height_pixels());
 					newFd.irPix.allocate(res.x, res.y, 1);
@@ -474,7 +474,7 @@ namespace ofxAzureKinectUtil {
 				img.reset();
 			}
 
-			if (this->isUseBodies) {
+			if (isUseBodies) {
 				k4a_wait_result_t enqueueResult = k4abt_tracker_enqueue_capture(bodyTracker, capture.handle(), K4A_WAIT_INFINITE);
 				if (enqueueResult == K4A_WAIT_RESULT_FAILED) {
 					ofLogError(__FUNCTION__) << "Failed adding capture to tracker process queue!";

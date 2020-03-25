@@ -36,6 +36,7 @@ namespace ofxAzureKinectUtil {
 		
 		float getProgress() const { return (float)currentTime.count() / (float)duration.count(); }
 		bool isPlaying() const { return bPlaying; }
+		bool isEnd() const { return bEnd; }
 
 		bool getLoop() const { return bLoop; }
 		void setLoop(bool t) { bLoop = t; }
@@ -49,6 +50,7 @@ namespace ofxAzureKinectUtil {
 	private:
 		static std::string toString(std::chrono::milliseconds duration);
 		bool bLoop;
+		bool bEnd;
 		k4a::playback playback;
 		k4a_record_configuration_t config;
 
