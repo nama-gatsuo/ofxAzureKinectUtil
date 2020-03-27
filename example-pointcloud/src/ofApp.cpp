@@ -9,38 +9,44 @@ void ofApp::setup() {
 	s.updatePointCloud = true;
 
 	kinect.open(s);
-	kinect.start();
 
 }
 
 void ofApp::update() {
-	kinect.update();
+	if (kinect.isStreaming()) kinect.update();
 }
 
 void ofApp::draw() {
 
-	if (!kinect.getColorTex().bAllocated()) return;
+	if (kinect.getColorTex().bAllocated()) {
+		cam.begin();
+		ofPushMatrix();
+		ofRotateX(180);
+		ofMultMatrix(glm::toMat4(kinect.getOrientation()));
 
-	cam.begin();
-	ofPushMatrix();
-	ofRotateX(180);
-	ofMultMatrix(glm::toMat4(kinect.getOrientation()));
-	
+		ofEnableDepthTest();
+		kinect.getColorTex().bind();
+		kinect.getPointCloud().draw();
+		kinect.getDepthTex().unbind();
+		ofDisableDepthTest();
 
-	ofEnableDepthTest();
-	kinect.getColorTex().bind();
-	kinect.getPointCloud().draw();
-	kinect.getDepthTex().unbind();
-	ofDisableDepthTest();
-	
-	ofPopMatrix();
-	cam.end();
-	
-	ofDrawBitmapStringHighlight("fps: " + ofToString(ofGetFrameRate()), 12, 16);
+		ofPopMatrix();
+		cam.end();
+
+		ofDrawBitmapString("space key: toggle kinnect", 12, 16);
+		ofDrawBitmapString("fps: " + ofToString(ofGetFrameRate()), 12, 32);
+
+	} else {
+		ofDrawBitmapString("space key: toggle kinnect", 12, 16);
+	}
+
 }
 
 void ofApp::keyPressed(int key) {
-	
+	if (key == ' ') {
+		if (!kinect.isStreaming()) kinect.start();
+		else kinect.stop();
+	}
 }
 
 void ofApp::exit() {

@@ -36,14 +36,16 @@ namespace ofxAzureKinectUtil {
 		bool open(const Settings& s);
 		void close() override;
 
-		bool start() override;
+		void start() override;
 		void stop() override;
+
+		bool isStreaming() const { return bPlaying; }
 
 		static int getInstalledCount() { return k4a_device_get_installed_count(); }
 
 	protected:
-		void updateCapture() override;
-		void updateIMU() override;
+		bool updateCapture() override;
+		bool updateIMU() override;
 	private:
 		int index;
 		std::string serialNumber;

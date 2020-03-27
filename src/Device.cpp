@@ -70,7 +70,16 @@ namespace ofxAzureKinectUtil {
 			return false;
 		}
 
-		bOpen = true;
+		// Get calibration.
+		try {
+			calibration = device.get_calibration(config.depth_mode, config.color_resolution);
+		} catch (const k4a::error& e) {
+			ofLogError(__FUNCTION__) << e.what();
+			return false;
+		}
+
+		Interface::open();
+		
 		ofLogNotice(__FUNCTION__) << "Successfully opened device " << s.deviceIndex << " with serial number " << this->serialNumber << ".";
 
 		return bOpen;
@@ -90,36 +99,21 @@ namespace ofxAzureKinectUtil {
 		
 	}
 
-	bool Device::start() {
+	void Device::start() {
 		if (!bOpen) {
 			ofLogError(__FUNCTION__) << "Open device before starting cameras!";
-			return false;
 		}
-
-		// Get calibration.
-		try {
-			calibration = device.get_calibration(config.depth_mode, config.color_resolution);
-		} catch (const k4a::error & e) {
-			ofLogError(__FUNCTION__) << e.what();
-			return false;
-		}
-
-		Interface::start();
 
 		// Start cameras.
 		try {
 			device.start_cameras(&config);
 			device.start_imu();
-		} catch (const k4a::error & e) {
+		} catch (const k4a::error& e) {
 			ofLogError(__FUNCTION__) << e.what();
-			return false;
 		}
+		
+		Interface::start();
 
-		startThread();
-
-		bPlaying = true;
-
-		return bPlaying;
 	}
 
 	void Device::stop() {
@@ -128,28 +122,36 @@ namespace ofxAzureKinectUtil {
 		device.stop_imu();
 	}
 
-	void Device::updateCapture() {
+	bool Device::updateCapture() {
+
+		if (!bPlaying) return false;
+
 		try {
 			if (!device.get_capture(&capture, std::chrono::milliseconds((int)frameTime))) {
 				ofLogWarning(__FUNCTION__) << "Timed out waiting for a capture for device " << index << ".";
-				return;
 			}
 		} catch (const k4a::error & e) {
 			ofLogError(__FUNCTION__) << e.what();
-			return;
+			return false;
 		}
+
+		return true;
 	}
 
-	void Device::updateIMU() {
+	bool Device::updateIMU() {
+
+		if (!bPlaying) return false;
+
 		try {
 			if (!device.get_imu_sample(&imuSample, std::chrono::milliseconds(TIMEOUT_IN_MS))) {
 				ofLogWarning(__FUNCTION__) << "Timed out waiting for a IMU for device " << index << ".";
-				return;
 			}
 		} catch (const k4a::error & e) {
 			ofLogError(__FUNCTION__) << e.what();
-			return;
+			return false;
 		}
+
+		return true;
 	}
 
 }

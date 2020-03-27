@@ -18,7 +18,7 @@ namespace ofxAzureKinectUtil {
 		tjDestroy(jpegDecompressor);
 	}
 
-	bool Interface::start() {
+	bool Interface::open() {
 
 		if (isUseDepth || isUsePointCloud || isUsePolygonMesh || isUseBodies) {
 			// Create transformation.
@@ -33,7 +33,15 @@ namespace ofxAzureKinectUtil {
 		// Create ray texture for mapping depth texture
 		createRayTex();
 		
+		startThread();
+
+		bOpen = true;
+
 		return true;
+	}
+
+	void Interface::start() {
+		bPlaying = true;
 	}
 
 	void Interface::stop() {
@@ -388,16 +396,16 @@ namespace ofxAzureKinectUtil {
 			
 			ScopedFrameSync sync(frameTime, frameSync);
 
-			updateIMU();
-			newFd.imu = {
-				imuSample.temperature,
-				toGlm(imuSample.acc_sample),
-				toGlm(imuSample.gyro_sample),
-				imuSample.acc_timestamp_usec
-			};
-
-			updateCapture();
-			if (!capture) continue;
+			if (updateIMU()) {
+				newFd.imu = {
+					imuSample.temperature,
+					toGlm(imuSample.acc_sample),
+					toGlm(imuSample.gyro_sample),
+					imuSample.acc_timestamp_usec
+				};
+			}
+			
+			if (!updateCapture() && !capture) continue;
 
 			k4a::image& depth = capture.get_depth_image();
 			k4a::image& color = capture.get_color_image();

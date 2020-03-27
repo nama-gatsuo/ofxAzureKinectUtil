@@ -43,7 +43,16 @@ namespace ofxAzureKinectUtil {
 		}
 
 		duration = std::chrono::duration_cast<std::chrono::milliseconds>(playback.get_recording_length());
-		bOpen = true;
+
+		try {
+			calibration = playback.get_calibration();
+			// playback.seek_timestamp(std::chrono::duration_cast<std::chrono::microseconds>(currentTime), K4A_PLAYBACK_SEEK_BEGIN);
+		} catch (const k4a::error& e) {
+			ofLogError(__FUNCTION__) << e.what();
+			return false;
+		}
+
+		Interface::open();
 
 		ofLogNotice(__FUNCTION__) << "Successfully opened playback file " << s.fileName << ".";
 		ofLogNotice(__FUNCTION__) << "duration: " << toString(duration) << ".";
@@ -59,37 +68,21 @@ namespace ofxAzureKinectUtil {
 		playback.close();
 	}
 
-	bool Playback::start() {
+	void Playback::start() {
 
-		try {
-			calibration = playback.get_calibration();
-			playback.seek_timestamp(std::chrono::microseconds(0), K4A_PLAYBACK_SEEK_BEGIN);
-			// playback.seek_timestamp(std::chrono::duration_cast<std::chrono::microseconds>(currentTime), K4A_PLAYBACK_SEEK_BEGIN);
-		} catch (const k4a::error & e) {
-			ofLogError(__FUNCTION__) << e.what();
-			return false;
-		}
+		playback.seek_timestamp(std::chrono::microseconds(0), K4A_PLAYBACK_SEEK_BEGIN);
 
 		frameCount = -1;
 		resetOrientationEstimation();
 
-		Interface::start();
-
-		bPlaying = true;
 		bEnd = false;
 
-		startThread();
-
-		return true;
+		Interface::start();
 	}
 
-	void Playback::stop() {
-		Interface::stop();
-	}
+	bool Playback::updateCapture() {
 
-	void Playback::updateCapture() {
-
-		if (!bPlaying) return;
+		if (!bPlaying) return false;
 
 		try {
 			bEnd = !playback.get_next_capture(&capture);
@@ -106,17 +99,23 @@ namespace ofxAzureKinectUtil {
 			}
 		} catch (const k4a::error & e) {
 			ofLogError(__FUNCTION__) << e.what();
-			return;
+			return false;
 		}
+
+		return true;
 	}
 
-	void Playback::updateIMU() {
+	bool Playback::updateIMU() {
+
+		if (!bPlaying) return false;
+
 		try {
 			playback.get_next_imu_sample(&imuSample);
 		} catch (const k4a::error & e) {
 			ofLogError(__FUNCTION__) << e.what();
-			return;
+			return false;
 		}
+		return true;
 	}
 	std::string Playback::toString(std::chrono::milliseconds duration) {
 		int min = duration.count() / 1000 / 60;

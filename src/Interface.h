@@ -19,7 +19,8 @@ namespace ofxAzureKinectUtil {
 		Interface();
 		virtual ~Interface();
 
-		virtual bool start();
+		bool open();
+		virtual void start();
 		virtual void stop();
 		virtual void close();
 
@@ -109,8 +110,8 @@ namespace ofxAzureKinectUtil {
 		std::chrono::milliseconds currentTime;
 		size_t frameCount;
 
-		virtual void updateCapture() = 0;
-		virtual void updateIMU() = 0;
+		virtual bool updateCapture() = 0;
+		virtual bool updateIMU() = 0;
 		void resetOrientationEstimation();
 	private:
 		void threadedFunction() override;

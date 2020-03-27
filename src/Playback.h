@@ -28,8 +28,7 @@ namespace ofxAzureKinectUtil {
 		bool open(const Settings& s);
 		void close() override;
 
-		bool start() override;
-		void stop() override;
+		void start() override;
 
 		void resume() { bPlaying = true; }
 		void pause() { bPlaying = false; }
@@ -45,8 +44,8 @@ namespace ofxAzureKinectUtil {
 		std::string getDurationString() const { return toString(duration); }
 
 	protected:
-		void updateCapture() override;
-		void updateIMU() override;
+		bool updateCapture() override;
+		bool updateIMU() override;
 	private:
 		static std::string toString(std::chrono::milliseconds duration);
 		bool bLoop;
