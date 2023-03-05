@@ -22,6 +22,13 @@ vs:
 	ADDON_LIBS += $(AZUREKINECT_SDK)\sdk\windows-desktop\amd64\release\lib\k4arecord.lib
 	ADDON_LIBS += $(AZUREKINECT_BODY_SDK)\sdk\windows-desktop\amd64\release\lib\k4abt.lib
 
+	ADDON_DLLS_TO_COPY += $(AZUREKINECT_SDK)\sdk\windows-desktop\amd64\release\bin\k4a.dll
+	ADDON_DLLS_TO_COPY += $(AZUREKINECT_SDK)\sdk\windows-desktop\amd64\release\bin\k4arecord.dll
+	ADDON_DLLS_TO_COPY += $(AZUREKINECT_SDK)\sdk\windows-desktop\amd64\release\bin\depthengine_2_0.dll
+	ADDON_DLLS_TO_COPY += $(AZUREKINECT_BODY_SDK)\sdk\windows-desktop\amd64\release\bin\k4abt.dll
+	ADDON_DLLS_TO_COPY += $(AZUREKINECT_BODY_SDK)\sdk\windows-desktop\amd64\release\bin\onnxruntime.dll
+	ADDON_DLLS_TO_COPY += $(AZUREKINECT_BODY_SDK)\sdk\windows-desktop\amd64\release\bin\dnn_model_2_0_op11.onnx
+
 linux64:
 
 linux:

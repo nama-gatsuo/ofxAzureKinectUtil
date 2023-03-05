@@ -27,7 +27,11 @@ namespace ofxAzureKinectUtil {
 
 		if (isUseBodies) {
 			// Create tracker.
-			k4abt_tracker_create(&calibration, trackerConfig, &bodyTracker);
+			k4a_result_t result = k4abt_tracker_create(&calibration, trackerConfig, &bodyTracker);
+			if (K4A_FAILED(result)) {
+				ofLogWarning(__FUNCTION__) << "Can't craete bt tracker!";
+				isUseBodies = false;
+			}
 		}
 
 		// Create ray texture for mapping depth texture

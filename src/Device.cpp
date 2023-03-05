@@ -17,6 +17,7 @@ namespace ofxAzureKinectUtil {
 		, updateIr(false)
 		, updateBodies(false)
 		, updatePointCloud(true)
+		, updatePolygonMesh(false)
 		, synchronized(true) {
 	}
 
@@ -125,6 +126,11 @@ namespace ofxAzureKinectUtil {
 	bool Device::updateCapture() {
 
 		if (!bPlaying) return false;
+
+		if (!device.is_valid()) {
+			ofLogWarning(__FUNCTION__) << "Device is invalid.";
+			return false;
+		}
 
 		try {
 			if (!device.get_capture(&capture, std::chrono::milliseconds((int)frameTime))) {
