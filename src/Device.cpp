@@ -56,6 +56,7 @@ namespace ofxAzureKinectUtil {
 		}
 
 		trackerConfig.sensor_orientation = s.sensorOrientation;
+		trackerConfig.processing_mode = K4ABT_TRACKER_PROCESSING_MODE_GPU;
 
 		try {
 			// Open connection to the device.

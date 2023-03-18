@@ -27,11 +27,14 @@ namespace ofxAzureKinectUtil {
 
 		if (isUseBodies) {
 			// Create tracker.
-			k4a_result_t result = k4abt_tracker_create(&calibration, trackerConfig, &bodyTracker);
-			if (K4A_FAILED(result)) {
+			try {
+				bodyTracker = k4abt::tracker::create(calibration, trackerConfig);
+			} catch (const k4a::error& error) {
+				ofLogError(__FUNCTION__) << error.what();
 				ofLogWarning(__FUNCTION__) << "Can't craete bt tracker!";
 				isUseBodies = false;
 			}
+			
 		}
 
 		// Create ray texture for mapping depth texture
@@ -57,9 +60,8 @@ namespace ofxAzureKinectUtil {
 		transformation.destroy();
 
 		if (this->isUseBodies) {
-			k4abt_tracker_shutdown(bodyTracker);
-			k4abt_tracker_destroy(bodyTracker);
-			bodyTracker = nullptr;
+			bodyTracker.shutdown();
+			bodyTracker.destroy();
 		}
 
 		request.close();
@@ -487,16 +489,17 @@ namespace ofxAzureKinectUtil {
 			}
 
 			if (isUseBodies) {
-				k4a_wait_result_t enqueueResult = k4abt_tracker_enqueue_capture(bodyTracker, capture.handle(), K4A_WAIT_INFINITE);
-				if (enqueueResult == K4A_WAIT_RESULT_FAILED) {
+				bool result = bodyTracker.enqueue_capture(capture);
+				//k4a_wait_result_t enqueueResult = k4abt_tracker_enqueue_capture(bodyTracker, capture.handle(), K4A_WAIT_INFINITE);
+				if (!result) {
 					ofLogError(__FUNCTION__) << "Failed adding capture to tracker process queue!";
 				} else {
-					k4abt_frame_t bodyFrame = nullptr;
-					k4a_wait_result_t popResult = k4abt_tracker_pop_result(bodyTracker, &bodyFrame, K4A_WAIT_INFINITE);
+					k4abt::frame bodyFrame = bodyTracker.pop_result();
+					//k4a_wait_result_t popResult = k4abt_tracker_pop_result(bodyTracker, &bodyFrame, K4A_WAIT_INFINITE);
 					
-					if (popResult == K4A_WAIT_RESULT_SUCCEEDED) {
+					if (bodyFrame) {
 						// Probe for a body index map image.
-						k4a::image img = k4abt_frame_get_body_index_map(bodyFrame);
+						k4a::image img = bodyFrame.get_body_index_map();
 						const glm::ivec2 res(img.get_width_pixels(), img.get_height_pixels());
 						
 						newFd.bodyIndexPix.allocate(res.x, res.y, 1);
@@ -505,20 +508,18 @@ namespace ofxAzureKinectUtil {
 						img.reset();
 
 						// Detect bodies
-						size_t numBodies = k4abt_frame_get_num_bodies(bodyFrame);
+						size_t numBodies = bodyFrame.get_num_bodies();
 
 						newFd.bodySkeletons.resize(numBodies);
 						newFd.bodyIDs.resize(numBodies);
 						for (size_t i = 0; i < numBodies; i++) {
-							k4abt_skeleton_t skeleton;
-							k4abt_frame_get_body_skeleton(bodyFrame, i, &skeleton);
-							newFd.bodySkeletons[i] = skeleton;
-							uint32_t id = k4abt_frame_get_body_id(bodyFrame, i);
-							newFd.bodyIDs[i] = id;
+							newFd.bodySkeletons[i] = bodyFrame.get_body_skeleton(i);
+							newFd.bodyIDs[i] = bodyFrame.get_body_id(i);
 						}
 
 						// Release body frame once we're finished.
-						k4abt_frame_release(bodyFrame);
+						bodyFrame.reset();
+						// k4abt_frame_release(bodyFrame);
 					}
 				}
 			}

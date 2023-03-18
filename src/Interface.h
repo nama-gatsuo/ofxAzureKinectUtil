@@ -8,7 +8,7 @@
 #include "k4aTypes.h"
 
 #include <k4a/k4a.hpp>
-#include <k4abt.h>
+#include <k4abt.hpp>
 #include "turbojpeg.h"
 #include "attitude_estimator.h"
 
@@ -104,7 +104,7 @@ namespace ofxAzureKinectUtil {
 		k4a::calibration calibration;
 		k4a::transformation transformation;
 		k4abt_tracker_configuration_t trackerConfig;
-		k4abt_tracker_t bodyTracker;
+		k4abt::tracker bodyTracker;
 		k4a_imu_sample_t imuSample;
 
 		std::chrono::milliseconds currentTime;
